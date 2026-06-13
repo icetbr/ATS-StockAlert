@@ -15,6 +15,7 @@ namespace StockAlert.Infrastructure.Bootstrap
         private static StockAlertRuntime _instance;
         private float _nextRefreshTime;
         private float _nextAutoAdjustTime;
+        private float _nextRainwaterAutoPauseTime;
         private float _nextBuilderStatusRefreshTime;
         private float _nextWorkerQueueRefreshTime;
         private float _nextItemLocatorRefreshTime;
@@ -67,6 +68,7 @@ namespace StockAlert.Infrastructure.Bootstrap
                 WorkerAssignmentQueue.ClearAll();
                 ItemLocatorOverlay.Clear();
                 ForestEaterDirectionOverlay.Clear();
+                RainwaterAutoPause.Clear();
                 ClearSeasonEndingTradeRoutesAlert();
                 _missionObjectiveAlertShown = false;
                 return;
@@ -119,6 +121,12 @@ namespace StockAlert.Infrastructure.Bootstrap
             {
                 _nextItemLocatorRefreshTime = Time.unscaledTime + 0.5f;
                 ItemLocatorOverlay.Refresh();
+            }
+
+            if (Time.unscaledTime >= _nextRainwaterAutoPauseTime)
+            {
+                _nextRainwaterAutoPauseTime = Time.unscaledTime + 2f;
+                RainwaterAutoPause.Process();
             }
 
             if (!ConfigManager.AutoAdjustProductionLimits && !ConfigManager.AutoAdjustPurgingFire)

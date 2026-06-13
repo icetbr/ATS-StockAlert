@@ -30,6 +30,7 @@ namespace StockAlert.Game
         private static PropertyInfo _piVillagersService;
         private static PropertyInfo _piBuildingsService;
         private static PropertyInfo _piBlightService;
+        private static PropertyInfo _piRainpunkService;
         private static PropertyInfo _piLocalStorages;
         private static PropertyInfo _piIngredientsStorages;
         private static PropertyInfo _piIsGameActive;
@@ -50,6 +51,8 @@ namespace StockAlert.Game
         private static MethodInfo _miGetRecipesForBuilding;
         private static MethodInfo _miGetAliveRaceAmount;
         private static MethodInfo _miGetGlobalActiveCysts;
+        private static MethodInfo _miCountWaterLeft;
+        private static MethodInfo _miCountTanksCapacity;
         private static MethodInfo _miGetDefaultProfessionAmount;
         private static MethodInfo _miGetDefaultProfessionVillager;
         private static MethodInfo _miSetProfession;
@@ -562,6 +565,181 @@ namespace StockAlert.Game
             {
                 return 0;
             }
+        }
+
+        public static int GetCityWaterLeft(WaterModel water)
+        {
+            if (water == null)
+            {
+                return -1;
+            }
+
+            try
+            {
+                var rainpunkService = GetRainpunkService();
+                if (rainpunkService == null)
+                {
+                    return -1;
+                }
+
+                if (_miCountWaterLeft == null)
+                {
+                    _miCountWaterLeft = rainpunkService.GetType().GetMethod("CountWaterLeft", new[] { typeof(WaterModel) });
+                }
+
+                if (_miCountWaterLeft == null)
+                {
+                    return -1;
+                }
+
+                return (int)_miCountWaterLeft.Invoke(rainpunkService, new object[] { water });
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        public static int GetCityWaterCapacity(WaterModel water)
+        {
+            if (water == null)
+            {
+                return -1;
+            }
+
+            try
+            {
+                var rainpunkService = GetRainpunkService();
+                if (rainpunkService == null)
+                {
+                    return -1;
+                }
+
+                if (_miCountTanksCapacity == null)
+                {
+                    _miCountTanksCapacity = rainpunkService.GetType().GetMethod("CountTanksCapacity", new[] { typeof(WaterModel) });
+                }
+
+                if (_miCountTanksCapacity == null)
+                {
+                    return -1;
+                }
+
+                return (int)_miCountTanksCapacity.Invoke(rainpunkService, new object[] { water });
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        public static List<Workshop> GetWorkshopBuildings()
+        {
+            var result = new List<Workshop>();
+
+            try
+            {
+                var buildingsService = GetBuildingsService();
+                if (buildingsService == null)
+                {
+                    return result;
+                }
+
+                _piWorkshops ??= buildingsService.GetType().GetProperty("Workshops", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                var entries = _piWorkshops?.GetValue(buildingsService, null) as IDictionary;
+                if (entries == null)
+                {
+                    return result;
+                }
+
+                foreach (DictionaryEntry entry in entries)
+                {
+                    if (entry.Value is Workshop workshop)
+                    {
+                        result.Add(workshop);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return result;
+        }
+
+        public static bool IsBuildingSleeping(Building building)
+        {
+            return building?.BuildingState != null && building.BuildingState.isSleeping;
+        }
+
+        public static bool SleepBuilding(Building building)
+        {
+            if (building?.BuildingState == null || building.BuildingState.isSleeping)
+            {
+                return false;
+            }
+
+            try
+            {
+                var canSleepMethod = GetCachedInstanceMethod(CanSleepMethods, building, "CanSleep");
+                if (canSleepMethod != null && canSleepMethod.Invoke(building, null) is bool canSleep && !canSleep)
+                {
+                    return false;
+                }
+
+                var sleepMethod = GetCachedInstanceMethod(SleepMethods, building, "Sleep");
+                if (sleepMethod == null)
+                {
+                    return false;
+                }
+
+                sleepMethod.Invoke(building, null);
+                return building.BuildingState.isSleeping;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public static bool WakeUpBuilding(Building building)
+        {
+            if (building?.BuildingState == null || !building.BuildingState.isSleeping)
+            {
+                return false;
+            }
+
+            try
+            {
+                var wakeUpMethod = GetCachedInstanceMethod(WakeUpMethods, building, "WakeUp");
+                if (wakeUpMethod == null)
+                {
+                    return false;
+                }
+
+                wakeUpMethod.Invoke(building, null);
+                return !building.BuildingState.isSleeping;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static readonly Dictionary<Type, MethodInfo> CanSleepMethods = new Dictionary<Type, MethodInfo>();
+        private static readonly Dictionary<Type, MethodInfo> SleepMethods = new Dictionary<Type, MethodInfo>();
+        private static readonly Dictionary<Type, MethodInfo> WakeUpMethods = new Dictionary<Type, MethodInfo>();
+
+        private static MethodInfo GetCachedInstanceMethod(Dictionary<Type, MethodInfo> cache, object instance, string methodName)
+        {
+            var type = instance.GetType();
+            if (!cache.TryGetValue(type, out var method))
+            {
+                method = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+                cache[type] = method;
+            }
+
+            return method;
         }
 
         public static float GetTimeTillNextSeasonChange()
@@ -1684,6 +1862,16 @@ namespace StockAlert.Game
             }
 
             return _piBlightService?.GetValue(null, null);
+        }
+
+        private static object GetRainpunkService()
+        {
+            if (_piRainpunkService == null)
+            {
+                _piRainpunkService = typeof(GameMB).GetProperty("RainpunkService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piRainpunkService?.GetValue(null, null);
         }
 
         private static object GetCalendarService()

@@ -75,9 +75,7 @@ namespace StockAlert.Infrastructure.Hooks
                 }
 
                 timeText.richText = true;
-                timeText.text = calculation.HasInfiniteLoop
-                    ? $"{timeText.text}\n<color=#FFD95A>Profit Infinite loop</color>"
-                    : $"{timeText.text}\n<color={GetProfitColor(calculation.ProfitPercent)}>Profit {FormatPercent(calculation.ProfitPercent)}</color>";
+                timeText.text = $"{timeText.text}\n<color={GetProfitColor(calculation.ProfitPercent)}>{FormatPercent(calculation.ProfitPercent)}</color>";
                 SetUpProfitTextTooltip(__instance, timeText);
             }
             catch (Exception)
@@ -203,13 +201,14 @@ namespace StockAlert.Infrastructure.Hooks
                 return false;
             }
 
+            // Profit = Payment - (Items + Provisions costs)
             var fuelAmount = fuel.amount * state.amount;
             var materialValue = materialCost.UnitCost * materialAmount;
             var fuelValue = fuelCost.UnitCost * fuelAmount;
             var baseValue = materialCost.BaseUnitValue * materialAmount + fuelCost.BaseUnitValue * fuelAmount;
             var rewardValue = reward.amount * state.amount;
-            var totalProfit = rewardValue - materialValue - fuelValue;
-            var profitPercent = baseValue > 0.001f ? totalProfit / baseValue * 100f : 0f;
+            var totalProfit = (rewardValue / 2f) - materialValue - fuelValue;
+            var profitPercent = totalProfit;//baseValue > 0.001f ? totalProfit / baseValue * 100f : 0f;
             var tooltip = BuildProfitTooltip(
                 state.good.name,
                 materialAmount,
@@ -267,7 +266,7 @@ namespace StockAlert.Infrastructure.Hooks
             }
 
             chain.Remove(goodName);
-            return best ?? CostResult.Raw(goodName, GetTraderSellValueInAmber(goodName, 1));
+            return CostResult.Raw(goodName, GetTraderSellValueInAmber(goodName, 1));
         }
 
         private static CostResult ResolveRecipeCost(GameAPI.AvailableWorkshopRecipe availableRecipe, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth, bool requireAvailableRaw)
@@ -542,7 +541,7 @@ namespace StockAlert.Infrastructure.Hooks
 
         private static string FormatPercent(float percent)
         {
-            return percent > 0f ? $"+{percent:0.#}%" : $"{percent:0.#}%";
+            return percent > 0f ? $"+{percent:0.##}" : $"{percent:0.##}";
         }
 
         private static string FormatAmber(float value)

@@ -1,0 +1,617 @@
+diff --git a/Config/ConfigManager.cs b/Config/ConfigManager.cs
+index 0be46fb..edbdf60 100644
+--- a/Config/ConfigManager.cs
++++ b/Config/ConfigManager.cs
+@@ -33,6 +33,8 @@ namespace StockAlert.Config
+         private static ConfigEntry<bool> _autoAdjustProductionLimits;
+         private static ConfigEntry<bool> _autoAdjustPurgingFire;
+         private static ConfigEntry<float> _autoAdjustMultiplier;
++        private static ConfigEntry<bool> _autoPauseOnNoRainwater;
++        private static ConfigEntry<bool> _autoResumeOnRainwater;
+         private static ConfigEntry<HudHorizontalAnchor> _hudAnchor;
+         private static ConfigEntry<float> _hudPositionX;
+         private static ConfigEntry<float> _hudPositionY;
+@@ -195,6 +197,18 @@ namespace StockAlert.Config
+                     new AcceptableValueRange<float>(1f, 9f)
+                 )
+             );
++            _autoPauseOnNoRainwater = _config.Bind(
++                "Automation",
++                "AutoPauseOnNoRainwater",
++                false,
++                "Automatically pause buildings with running Rain Engines when the rainwater type they use is fully depleted."
++            );
++            _autoResumeOnRainwater = _config.Bind(
++                "Automation",
++                "AutoResumeOnRainwater",
++                true,
++                "Automatically resume buildings paused by the rainwater auto-pause once their rainwater type is available again. Buildings manually resumed by the player are left alone."
++            );
+             _hudAnchor = _config.Bind(
+                 "HUD",
+                 "HudAnchor",
+@@ -585,6 +599,36 @@ namespace StockAlert.Config
+             }
+         }
+ 
++        public static bool AutoPauseOnNoRainwater
++        {
++            get
++            {
++                Load();
++                return _autoPauseOnNoRainwater.Value;
++            }
++            set
++            {
++                Load();
++                _autoPauseOnNoRainwater.Value = value;
++                _config.Save();
++            }
++        }
++
++        public static bool AutoResumeOnRainwater
++        {
++            get
++            {
++                Load();
++                return _autoResumeOnRainwater.Value;
++            }
++            set
++            {
++                Load();
++                _autoResumeOnRainwater.Value = value;
++                _config.Save();
++            }
++        }
++
+         public static void EnsureGoodConfig(GoodInfo g)
+         {
+             Load();
+diff --git a/Game/GameAPI.cs b/Game/GameAPI.cs
+index e47ac5a..4d8d989 100644
+--- a/Game/GameAPI.cs
++++ b/Game/GameAPI.cs
+@@ -25,6 +25,7 @@ namespace StockAlert.Game
+         private static PropertyInfo _piVillagersService;
+         private static PropertyInfo _piBuildingsService;
+         private static PropertyInfo _piBlightService;
++        private static PropertyInfo _piRainpunkService;
+         private static PropertyInfo _piLocalStorages;
+         private static PropertyInfo _piIngredientsStorages;
+         private static PropertyInfo _piIsGameActive;
+@@ -45,6 +46,8 @@ namespace StockAlert.Game
+         private static MethodInfo _miGetRecipesForBuilding;
+         private static MethodInfo _miGetAliveRaceAmount;
+         private static MethodInfo _miGetGlobalActiveCysts;
++        private static MethodInfo _miCountWaterLeft;
++        private static MethodInfo _miCountTanksCapacity;
+         private static MethodInfo _miGetDefaultProfessionAmount;
+         private static MethodInfo _miGetDefaultProfessionVillager;
+         private static MethodInfo _miSetProfession;
+@@ -487,6 +490,181 @@ namespace StockAlert.Game
+             }
+         }
+ 
++        public static int GetCityWaterLeft(WaterModel water)
++        {
++            if (water == null)
++            {
++                return -1;
++            }
++
++            try
++            {
++                var rainpunkService = GetRainpunkService();
++                if (rainpunkService == null)
++                {
++                    return -1;
++                }
++
++                if (_miCountWaterLeft == null)
++                {
++                    _miCountWaterLeft = rainpunkService.GetType().GetMethod("CountWaterLeft", new[] { typeof(WaterModel) });
++                }
++
++                if (_miCountWaterLeft == null)
++                {
++                    return -1;
++                }
++
++                return (int)_miCountWaterLeft.Invoke(rainpunkService, new object[] { water });
++            }
++            catch (Exception)
++            {
++                return -1;
++            }
++        }
++
++        public static int GetCityWaterCapacity(WaterModel water)
++        {
++            if (water == null)
++            {
++                return -1;
++            }
++
++            try
++            {
++                var rainpunkService = GetRainpunkService();
++                if (rainpunkService == null)
++                {
++                    return -1;
++                }
++
++                if (_miCountTanksCapacity == null)
++                {
++                    _miCountTanksCapacity = rainpunkService.GetType().GetMethod("CountTanksCapacity", new[] { typeof(WaterModel) });
++                }
++
++                if (_miCountTanksCapacity == null)
++                {
++                    return -1;
++                }
++
++                return (int)_miCountTanksCapacity.Invoke(rainpunkService, new object[] { water });
++            }
++            catch (Exception)
++            {
++                return -1;
++            }
++        }
++
++        public static List<Workshop> GetWorkshopBuildings()
++        {
++            var result = new List<Workshop>();
++
++            try
++            {
++                var buildingsService = GetBuildingsService();
++                if (buildingsService == null)
++                {
++                    return result;
++                }
++
++                _piWorkshops ??= buildingsService.GetType().GetProperty("Workshops", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
++                var entries = _piWorkshops?.GetValue(buildingsService, null) as IDictionary;
++                if (entries == null)
++                {
++                    return result;
++                }
++
++                foreach (DictionaryEntry entry in entries)
++                {
++                    if (entry.Value is Workshop workshop)
++                    {
++                        result.Add(workshop);
++                    }
++                }
++            }
++            catch (Exception)
++            {
++            }
++
++            return result;
++        }
++
++        public static bool IsBuildingSleeping(Building building)
++        {
++            return building?.BuildingState != null && building.BuildingState.isSleeping;
++        }
++
++        public static bool SleepBuilding(Building building)
++        {
++            if (building?.BuildingState == null || building.BuildingState.isSleeping)
++            {
++                return false;
++            }
++
++            try
++            {
++                var canSleepMethod = GetCachedInstanceMethod(CanSleepMethods, building, "CanSleep");
++                if (canSleepMethod != null && canSleepMethod.Invoke(building, null) is bool canSleep && !canSleep)
++                {
++                    return false;
++                }
++
++                var sleepMethod = GetCachedInstanceMethod(SleepMethods, building, "Sleep");
++                if (sleepMethod == null)
++                {
++                    return false;
++                }
++
++                sleepMethod.Invoke(building, null);
++                return building.BuildingState.isSleeping;
++            }
++            catch (Exception)
++            {
++                return false;
++            }
++        }
++
++        public static bool WakeUpBuilding(Building building)
++        {
++            if (building?.BuildingState == null || !building.BuildingState.isSleeping)
++            {
++                return false;
++            }
++
++            try
++            {
++                var wakeUpMethod = GetCachedInstanceMethod(WakeUpMethods, building, "WakeUp");
++                if (wakeUpMethod == null)
++                {
++                    return false;
++                }
++
++                wakeUpMethod.Invoke(building, null);
++                return !building.BuildingState.isSleeping;
++            }
++            catch (Exception)
++            {
++                return false;
++            }
++        }
++
++        private static readonly Dictionary<Type, MethodInfo> CanSleepMethods = new Dictionary<Type, MethodInfo>();
++        private static readonly Dictionary<Type, MethodInfo> SleepMethods = new Dictionary<Type, MethodInfo>();
++        private static readonly Dictionary<Type, MethodInfo> WakeUpMethods = new Dictionary<Type, MethodInfo>();
++
++        private static MethodInfo GetCachedInstanceMethod(Dictionary<Type, MethodInfo> cache, object instance, string methodName)
++        {
++            var type = instance.GetType();
++            if (!cache.TryGetValue(type, out var method))
++            {
++                method = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
++                cache[type] = method;
++            }
++
++            return method;
++        }
++
+         public static float GetTimeTillNextSeasonChange()
+         {
+             try
+@@ -1408,6 +1586,16 @@ namespace StockAlert.Game
+             return _piBlightService?.GetValue(null, null);
+         }
+ 
++        private static object GetRainpunkService()
++        {
++            if (_piRainpunkService == null)
++            {
++                _piRainpunkService = typeof(GameMB).GetProperty("RainpunkService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
++            }
++
++            return _piRainpunkService?.GetValue(null, null);
++        }
++
+         private static object GetCalendarService()
+         {
+             if (_piCalendarService == null)
+diff --git a/Game/RainwaterAutoPause.cs b/Game/RainwaterAutoPause.cs
+new file mode 100644
+index 0000000..01c75fa
+--- /dev/null
++++ b/Game/RainwaterAutoPause.cs
+@@ -0,0 +1,191 @@
++using System.Collections.Generic;
++using System.Linq;
++using Eremite.Buildings;
++using Eremite.Model;
++using StockAlert.Config;
++using StockAlert.Infrastructure.Plugin;
++using UnityEngine;
++
++namespace StockAlert.Game
++{
++    /// <summary>
++    /// Automatically pauses (sleeps) buildings whose Rain Engines are switched on
++    /// when the rainwater type they consume is fully depleted, and optionally
++    /// resumes them once that rainwater is available again.
++    ///
++    /// Only buildings paused by this feature are ever resumed by it. Buildings the
++    /// player pauses or resumes manually are left alone.
++    /// </summary>
++    internal static class RainwaterAutoPause
++    {
++        // Ids of buildings paused by this feature.
++        private static readonly HashSet<int> PausedByMod = new HashSet<int>();
++
++        // Avoids resume/pause flapping when only a trickle of water arrives.
++        private const int MaxResumeThreshold = 10;
++
++        public static void Clear()
++        {
++            PausedByMod.Clear();
++        }
++
++        public static void Process()
++        {
++            if (!ConfigManager.AutoPauseOnNoRainwater)
++            {
++                if (PausedByMod.Count > 0)
++                {
++                    PausedByMod.Clear();
++                }
++
++                return;
++            }
++
++            if (!GameAPI.IsGameActive())
++            {
++                return;
++            }
++
++            var workshops = GameAPI.GetWorkshopBuildings();
++            if (workshops.Count == 0)
++            {
++                return;
++            }
++
++            var seenIds = new HashSet<int>();
++            List<string> pausedNames = null;
++            List<string> resumedNames = null;
++
++            foreach (var workshop in workshops)
++            {
++                if (workshop == null)
++                {
++                    continue;
++                }
++
++                seenIds.Add(workshop.Id);
++
++                var buildingState = workshop.BuildingState;
++                var water = workshop.model?.rainpunk?.water;
++                var state = workshop.state;
++
++                if (buildingState == null || !buildingState.finished || water == null || state == null || !state.rainpunkUnlocked)
++                {
++                    PausedByMod.Remove(workshop.Id);
++                    continue;
++                }
++
++                var waterLeft = GameAPI.GetCityWaterLeft(water);
++                if (waterLeft < 0)
++                {
++                    // Water amount could not be determined - never act on unknown data.
++                    continue;
++                }
++
++                if (PausedByMod.Contains(workshop.Id))
++                {
++                    if (!buildingState.isSleeping)
++                    {
++                        // The player resumed this building manually - stop tracking it.
++                        PausedByMod.Remove(workshop.Id);
++                        continue;
++                    }
++
++                    if (ConfigManager.AutoResumeOnRainwater && waterLeft >= GetResumeThreshold(water))
++                    {
++                        if (GameAPI.WakeUpBuilding(workshop))
++                        {
++                            PausedByMod.Remove(workshop.Id);
++                            resumedNames ??= new List<string>();
++                            resumedNames.Add(GameAPI.GetBuildingDisplayName(workshop.BuildingModel));
++                        }
++                    }
++
++                    continue;
++                }
++
++                if (buildingState.isSleeping || waterLeft > 0 || !HasRunningEngines(state))
++                {
++                    continue;
++                }
++
++                if (GameAPI.SleepBuilding(workshop))
++                {
++                    PausedByMod.Add(workshop.Id);
++                    pausedNames ??= new List<string>();
++                    pausedNames.Add(GameAPI.GetBuildingDisplayName(workshop.BuildingModel));
++                }
++            }
++
++            RemoveStaleEntries(seenIds);
++            AnnouncePaused(pausedNames);
++
++            if (resumedNames != null)
++            {
++                Plugin.Log("Rainwater available again, resumed: " + string.Join(", ", resumedNames.ToArray()));
++            }
++        }
++
++        private static bool HasRunningEngines(WorkshopState state)
++        {
++            var engines = state?.engines;
++            if (engines == null)
++            {
++                return false;
++            }
++
++            foreach (var engine in engines)
++            {
++                if (engine != null && engine.requestedLevel > 0)
++                {
++                    return true;
++                }
++            }
++
++            return false;
++        }
++
++        private static int GetResumeThreshold(WaterModel water)
++        {
++            var capacity = GameAPI.GetCityWaterCapacity(water);
++            if (capacity <= 0)
++            {
++                return 1;
++            }
++
++            return Mathf.Clamp(capacity / 10, 1, MaxResumeThreshold);
++        }
++
++        private static void RemoveStaleEntries(HashSet<int> seenIds)
++        {
++            if (PausedByMod.Count == 0)
++            {
++                return;
++            }
++
++            PausedByMod.RemoveWhere(id => !seenIds.Contains(id));
++        }
++
++        private static void AnnouncePaused(List<string> pausedNames)
++        {
++            if (pausedNames == null || pausedNames.Count == 0)
++            {
++                return;
++            }
++
++            var names = string.Join(", ", pausedNames.Take(5).ToArray());
++            if (pausedNames.Count > 5)
++            {
++                names += $" and {pausedNames.Count - 5} more";
++            }
++
++            GameAPI.PublishNews(
++                pausedNames.Count == 1
++                    ? "Out of rainwater - paused 1 building."
++                    : $"Out of rainwater - paused {pausedNames.Count} buildings.",
++                names
++            );
++            Plugin.Log("Rainwater depleted, auto-paused: " + names);
++        }
++    }
++}
+diff --git a/Infrastructure/Bootstrap/StockAlertRuntime.cs b/Infrastructure/Bootstrap/StockAlertRuntime.cs
+index 344cdd7..fcc37b5 100644
+--- a/Infrastructure/Bootstrap/StockAlertRuntime.cs
++++ b/Infrastructure/Bootstrap/StockAlertRuntime.cs
+@@ -15,6 +15,7 @@ namespace StockAlert.Infrastructure.Bootstrap
+         private static StockAlertRuntime _instance;
+         private float _nextRefreshTime;
+         private float _nextAutoAdjustTime;
++        private float _nextRainwaterAutoPauseTime;
+         private float _nextBuilderStatusRefreshTime;
+         private float _nextWorkerQueueRefreshTime;
+         private float _nextItemLocatorRefreshTime;
+@@ -62,6 +63,7 @@ namespace StockAlert.Infrastructure.Bootstrap
+                 IdleBuildersAlert.Clear();
+                 WorkerAssignmentQueue.ClearAll();
+                 ItemLocatorOverlay.Clear();
++                RainwaterAutoPause.Clear();
+                 ClearSeasonEndingTradeRoutesAlert();
+                 return;
+             }
+@@ -105,6 +107,12 @@ namespace StockAlert.Infrastructure.Bootstrap
+                 ItemLocatorOverlay.Refresh();
+             }
+ 
++            if (Time.unscaledTime >= _nextRainwaterAutoPauseTime)
++            {
++                _nextRainwaterAutoPauseTime = Time.unscaledTime + 2f;
++                RainwaterAutoPause.Process();
++            }
++
+             if (!ConfigManager.AutoAdjustProductionLimits && !ConfigManager.AutoAdjustPurgingFire)
+             {
+                 return;
+diff --git a/README.md b/README.md
+index c8a333a..1a2569d 100644
+--- a/README.md
++++ b/README.md
+@@ -12,6 +12,8 @@ It can also optionally auto-adjust production limits for all goods you currently
+ 
+ It can also optionally auto-adjust the Purging Fire production limit in blight posts to the number of existing cysts plus one.
+ 
++It can also optionally auto-pause buildings with running Rain Engines when the rainwater type they use runs out, and auto-resume them once rainwater is available again.
++
+ It can also optionally queue a chosen race for a worker slot by Ctrl+clicking a race portrait, so the slot auto-fills the next time it becomes empty and a matching free villager becomes available.
+ 
+ It can also optionally show how much of each insufficient ingredient is currently sitting in non-warehouse buildings in the ingredient selection wheel.
+@@ -53,7 +55,7 @@ Integrated Builder Icon mod made by ~DGH into my mod with some changes:
+ 
+ Newly triggered shortages go at the top of the list.
+ 
+-Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, queued worker assignments, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
++Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, queued worker assignments, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, rainwater auto-pause, and production limit multiplier are available in the `F8` settings window.
+ 
+ The builder demand counter is enabled by default and is configured only in the BepInEx config file, not the `F8` settings window. To disable it, edit `BepInEx/config/StockAlert.cfg` and set:
+ 
+@@ -80,13 +82,14 @@ If a good has no production limit, it is ignored by the mod.
+ 4. Optional: choose whether the Stock Alert HUD anchors to the bottom-right or bottom-left corner.
+ 5. Optional: enable auto-adjust in the `F8` window to make the mod set eligible global production limits for you.
+ 6. Optional: enable Purging Fire auto-adjust in the `F8` window to make blight posts keep that limit at `existing cysts + 1`.
+-7. Optional: enable building shortage indicators in the `F8` window to spot where extra staffing would help with current shortages.
+-8. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders and mark matching race portraits in the building worker assignment wheel.
+-9. Optional: enable queued worker assignments in the `F8` window, then Ctrl+click a race portrait to reserve that race for a worker slot until the next vacancy.
+-10. Optional: enable ingredient wheel building stock in the `F8` window to show how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
+-11. Optional: enable embarkation cost ranges in the `F8` window to show the possible cost range and current cost on embarkation bonuses.
+-12. Optional: enable trade route profit in the `F8` window to show estimated percentage profit on trade route offers.
+-13. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
++7. Optional: enable rainwater auto-pause in the `F8` window to pause buildings with running Rain Engines when their rainwater runs out, and resume them when it returns.
++8. Optional: enable building shortage indicators in the `F8` window to spot where extra staffing would help with current shortages.
++9. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders and mark matching race portraits in the building worker assignment wheel.
++10. Optional: enable queued worker assignments in the `F8` window, then Ctrl+click a race portrait to reserve that race for a worker slot until the next vacancy.
++11. Optional: enable ingredient wheel building stock in the `F8` window to show how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
++12. Optional: enable embarkation cost ranges in the `F8` window to show the possible cost range and current cost on embarkation bonuses.
++13. Optional: enable trade route profit in the `F8` window to show estimated percentage profit on trade route offers.
++14. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
+ 
+ ## Auto-adjust option
+ 
+@@ -103,6 +106,17 @@ If a good has no production limit, it is ignored by the mod.
+ - when enabled, the mod sets the Purging Fire production limit in blight posts to `existing cysts + 1`
+ - disabling the option stops further automatic changes, but does not restore the previous manual limit
+ 
++## Rainwater auto-pause option
++
++- off by default
++- when enabled, the mod watches every building that has Rain Engines installed and switched on (any engine knob set above 0)
++- when the rainwater type that building uses (Drizzle, Clearance, or Storm Water) is fully depleted city-wide, the building is paused, exactly as if you had clicked its in-game pause button
++- a news alert lists the buildings that were paused
++- by default, buildings paused this way are automatically resumed once their rainwater type is available again (a small buffer of roughly 10% of tank capacity, up to 10 water, is required before resuming to avoid rapid pause/resume cycles); this auto-resume can be disabled separately
++- only buildings paused by the mod are ever resumed by it - if you resume a paused building manually, the mod stops managing it until it pauses it again; buildings you paused yourself are never touched
++- buildings without Rain Engines installed, with all engines set to 0, or with rainpunk not yet unlocked are ignored
++- disabling the option stops further automatic changes, but does not resume buildings that are already paused
++
+ ## Queued worker assignments
+ 
+ - off by default
+diff --git a/UI/Panels/UIController.cs b/UI/Panels/UIController.cs
+index eb5041f..7deaa7c 100644
+--- a/UI/Panels/UIController.cs
++++ b/UI/Panels/UIController.cs
+@@ -374,6 +374,31 @@ namespace StockAlert.UI.Panels
+                     }
+                 }
+ 
++                var autoPauseOnNoRainwater = GUILayout.Toggle(
++                    ConfigManager.AutoPauseOnNoRainwater,
++                    "Auto-pause buildings when out of rainwater",
++                    _toggleStyle
++                );
++                if (autoPauseOnNoRainwater != ConfigManager.AutoPauseOnNoRainwater)
++                {
++                    ConfigManager.AutoPauseOnNoRainwater = autoPauseOnNoRainwater;
++                }
++
++                GUILayout.BeginHorizontal();
++                GUILayout.Space(20f);
++                var autoResumeOnRainwater = GUILayout.Toggle(
++                    ConfigManager.AutoResumeOnRainwater,
++                    "Auto-resume when rainwater returns",
++                    _toggleStyle,
++                    GUILayout.Width(280f)
++                );
++                if (autoResumeOnRainwater != ConfigManager.AutoResumeOnRainwater)
++                {
++                    ConfigManager.AutoResumeOnRainwater = autoResumeOnRainwater;
++                }
++                GUILayout.FlexibleSpace();
++                GUILayout.EndHorizontal();
++
+                 GUILayout.Space(12f);
+                 if (GUILayout.Button("Close", _buttonStyle, GUILayout.Height(28f)))
+                 {

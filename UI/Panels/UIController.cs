@@ -441,6 +441,31 @@ namespace StockAlert.UI.Panels
                     }
                 }
 
+                var autoPauseOnNoRainwater = GUILayout.Toggle(
+                    ConfigManager.AutoPauseOnNoRainwater,
+                    "Auto-pause buildings when out of rainwater",
+                    _toggleStyle
+                );
+                if (autoPauseOnNoRainwater != ConfigManager.AutoPauseOnNoRainwater)
+                {
+                    ConfigManager.AutoPauseOnNoRainwater = autoPauseOnNoRainwater;
+                }
+
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20f);
+                var autoResumeOnRainwater = GUILayout.Toggle(
+                    ConfigManager.AutoResumeOnRainwater,
+                    "Auto-resume when rainwater returns",
+                    _toggleStyle,
+                    GUILayout.Width(280f)
+                );
+                if (autoResumeOnRainwater != ConfigManager.AutoResumeOnRainwater)
+                {
+                    ConfigManager.AutoResumeOnRainwater = autoResumeOnRainwater;
+                }
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+
                 GUILayout.Space(12f);
                 if (GUILayout.Button("Close", _buttonStyle, GUILayout.Height(28f)))
                 {

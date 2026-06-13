@@ -12,6 +12,8 @@ It can also optionally auto-adjust production limits for all goods you currently
 
 It can also optionally auto-adjust the Purging Fire production limit in blight posts to the number of existing cysts plus one.
 
+It can also optionally auto-pause buildings with running Rain Engines when the rainwater type they use runs out, and auto-resume them once rainwater is available again.
+
 It can also optionally queue a chosen race for a worker slot by Ctrl+clicking a race portrait, so the slot auto-fills the next time it becomes empty and a matching free villager becomes available.
 
 It can also optionally show how much of each insufficient ingredient is currently sitting in non-warehouse buildings in the ingredient selection wheel.
@@ -67,6 +69,8 @@ Options for HUD anchor, movable, hideable, building indicators, builder status i
 
 The timed orders alert is enabled by default and can be disabled in the `F8` settings window.
 
+Also, rainwater auto-pause
+
 The builder demand counter is enabled by default and is configured only in the BepInEx config file, not the `F8` settings window. To disable it, edit `BepInEx/config/StockAlert.cfg` and set:
 
 ```ini
@@ -106,6 +110,8 @@ If a good has no production limit, it is ignored by the mod.
 14. Optional: enable trade route profit in the `F8` window to show estimated percentage profit on trade route offers.
 15. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
 
+Also Optional: enable rainwater auto-pause in the `F8` window to pause buildings with running Rain Engines when their rainwater runs out, and resume them when it returns.
+
 ## Auto-adjust option
 
 - off by default
@@ -120,6 +126,17 @@ If a good has no production limit, it is ignored by the mod.
 - off by default
 - when enabled, the mod sets the Purging Fire production limit in blight posts to `existing cysts + 1`
 - disabling the option stops further automatic changes, but does not restore the previous manual limit
+
+## Rainwater auto-pause option
+
+- off by default
+- when enabled, the mod watches every building that has Rain Engines installed and switched on (any engine knob set above 0)
+- when the rainwater type that building uses (Drizzle, Clearance, or Storm Water) is fully depleted city-wide, the building is paused, exactly as if you had clicked its in-game pause button
+- a news alert lists the buildings that were paused
+- by default, buildings paused this way are automatically resumed once their rainwater type is available again (a small buffer of roughly 10% of tank capacity, up to 10 water, is required before resuming to avoid rapid pause/resume cycles); this auto-resume can be disabled separately
+- only buildings paused by the mod are ever resumed by it - if you resume a paused building manually, the mod stops managing it until it pauses it again; buildings you paused yourself are never touched
+- buildings without Rain Engines installed, with all engines set to 0, or with rainpunk not yet unlocked are ignored
+- disabling the option stops further automatic changes, but does not resume buildings that are already paused
 
 ## Queued worker assignments
 

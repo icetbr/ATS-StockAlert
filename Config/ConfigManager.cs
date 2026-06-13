@@ -41,6 +41,8 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<bool> _autoAdjustPurgingFire;
         private static ConfigEntry<float> _autoAdjustMultiplier;
+        private static ConfigEntry<bool> _autoPauseOnNoRainwater;
+        private static ConfigEntry<bool> _autoResumeOnRainwater;
         private static ConfigEntry<HudHorizontalAnchor> _hudAnchor;
         private static ConfigEntry<float> _hudPositionX;
         private static ConfigEntry<float> _hudPositionY;
@@ -250,6 +252,18 @@ namespace StockAlert.Config
                     "Multiplier applied per consuming villager when auto-adjusting production limits. Range: 1.0 to 9.0.",
                     new AcceptableValueRange<float>(1f, 9f)
                 )
+            );
+            _autoPauseOnNoRainwater = _config.Bind(
+                "Automation",
+                "AutoPauseOnNoRainwater",
+                false,
+                "Automatically pause buildings with running Rain Engines when the rainwater type they use is fully depleted."
+            );
+            _autoResumeOnRainwater = _config.Bind(
+                "Automation",
+                "AutoResumeOnRainwater",
+                true,
+                "Automatically resume buildings paused by the rainwater auto-pause once their rainwater type is available again. Buildings manually resumed by the player are left alone."
             );
             _hudAnchor = _config.Bind(
                 "HUD",
@@ -757,6 +771,36 @@ namespace StockAlert.Config
             {
                 Load();
                 _autoAdjustPurgingFire.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool AutoPauseOnNoRainwater
+        {
+            get
+            {
+                Load();
+                return _autoPauseOnNoRainwater.Value;
+            }
+            set
+            {
+                Load();
+                _autoPauseOnNoRainwater.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool AutoResumeOnRainwater
+        {
+            get
+            {
+                Load();
+                return _autoResumeOnRainwater.Value;
+            }
+            set
+            {
+                Load();
+                _autoResumeOnRainwater.Value = value;
                 _config.Save();
             }
         }
