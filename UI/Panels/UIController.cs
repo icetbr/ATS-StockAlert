@@ -60,7 +60,7 @@ namespace StockAlert.UI.Panels
             private static GUIStyle _fieldStyle;
             private static GUIStyle _sectionStyle;
 
-            private Rect _windowRect = new Rect(40f, 40f, 430f, 445f);
+            private Rect _windowRect = new Rect(40f, 40f, 430f, 470f);
             private string _multiplierInput = "2.0";
             private string _buildingShortageIconScaleInput = "0.90";
             private GameObject _clickBlockerCanvasObject;
@@ -369,6 +369,22 @@ namespace StockAlert.UI.Panels
                 {
                     ConfigManager.AutoAdjustPurgingFire = autoAdjustPurgingFire;
                     if (autoAdjustPurgingFire)
+                    {
+                        AutoProductionLimits.ApplyCurrentTargets();
+                    }
+                }
+
+                GUILayout.Space(4f);
+
+                var autoStopRainwaterProduction = GUILayout.Toggle(
+                    ConfigManager.AutoStopProductionWhenRainwaterEmpty,
+                    "Auto-stop recipes when building rainwater is empty",
+                    _toggleStyle
+                );
+                if (autoStopRainwaterProduction != ConfigManager.AutoStopProductionWhenRainwaterEmpty)
+                {
+                    ConfigManager.AutoStopProductionWhenRainwaterEmpty = autoStopRainwaterProduction;
+                    if (autoStopRainwaterProduction)
                     {
                         AutoProductionLimits.ApplyCurrentTargets();
                     }

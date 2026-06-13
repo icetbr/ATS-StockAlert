@@ -105,7 +105,9 @@ namespace StockAlert.Infrastructure.Bootstrap
                 ItemLocatorOverlay.Refresh();
             }
 
-            if (!ConfigManager.AutoAdjustProductionLimits && !ConfigManager.AutoAdjustPurgingFire)
+            if (!ConfigManager.AutoAdjustProductionLimits &&
+                !ConfigManager.AutoAdjustPurgingFire &&
+                !ConfigManager.AutoStopProductionWhenRainwaterEmpty)
             {
                 return;
             }

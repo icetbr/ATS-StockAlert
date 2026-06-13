@@ -27,7 +27,10 @@ namespace StockAlert.Game
 
         public static void ApplyCurrentTargets()
         {
-            if ((!ConfigManager.AutoAdjustProductionLimits && !ConfigManager.AutoAdjustPurgingFire) || !GameAPI.IsGameActive())
+            if ((!ConfigManager.AutoAdjustProductionLimits &&
+                 !ConfigManager.AutoAdjustPurgingFire &&
+                 !ConfigManager.AutoStopProductionWhenRainwaterEmpty) ||
+                !GameAPI.IsGameActive())
             {
                 return;
             }
@@ -75,6 +78,11 @@ namespace StockAlert.Game
             if (ConfigManager.AutoAdjustPurgingFire)
             {
                 changed |= ApplyBlightFuelTarget(availableRecipeGoods);
+            }
+
+            if (ConfigManager.AutoStopProductionWhenRainwaterEmpty)
+            {
+                changed |= RainwaterProductionStopper.Apply();
             }
 
             if (changed)
