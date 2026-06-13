@@ -17,6 +17,7 @@ namespace StockAlert.Infrastructure.Bootstrap
         private float _nextAutoAdjustTime;
         private float _nextBuilderStatusRefreshTime;
         private float _nextWorkerQueueRefreshTime;
+        private float _nextRainwaterProductionStopTime;
         private float _nextItemLocatorRefreshTime;
         private bool _seasonEndingAlertShown;
         private GameDate _seasonEndingAlertDate;
@@ -62,6 +63,7 @@ namespace StockAlert.Infrastructure.Bootstrap
                 IdleBuildersAlert.Clear();
                 WorkerAssignmentQueue.ClearAll();
                 ItemLocatorOverlay.Clear();
+                RainwaterProductionStopper.Clear();
                 ClearSeasonEndingTradeRoutesAlert();
                 return;
             }
@@ -105,6 +107,8 @@ namespace StockAlert.Infrastructure.Bootstrap
                 ItemLocatorOverlay.Refresh();
             }
 
+            UpdateRainwaterProductionStopper();
+
             if (!ConfigManager.AutoAdjustProductionLimits && !ConfigManager.AutoAdjustPurgingFire)
             {
                 return;
@@ -115,6 +119,23 @@ namespace StockAlert.Infrastructure.Bootstrap
                 _nextAutoAdjustTime = Time.unscaledTime + 2f;
                 AutoProductionLimits.ApplyCurrentTargets();
             }
+        }
+
+        private void UpdateRainwaterProductionStopper()
+        {
+            if (!ConfigManager.AutoStopProductionWithoutRainwater)
+            {
+                RainwaterProductionStopper.RestoreManagedRecipes();
+                return;
+            }
+
+            if (Time.unscaledTime < _nextRainwaterProductionStopTime)
+            {
+                return;
+            }
+
+            _nextRainwaterProductionStopTime = Time.unscaledTime + 1f;
+            RainwaterProductionStopper.Apply();
         }
 
         private void UpdateSeasonEndingTradeRoutesAlert()

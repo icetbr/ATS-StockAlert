@@ -32,6 +32,7 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _seasonEndingTradeRoutesAlert;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<bool> _autoAdjustPurgingFire;
+        private static ConfigEntry<bool> _autoStopProductionWithoutRainwater;
         private static ConfigEntry<float> _autoAdjustMultiplier;
         private static ConfigEntry<HudHorizontalAnchor> _hudAnchor;
         private static ConfigEntry<float> _hudPositionX;
@@ -185,6 +186,12 @@ namespace StockAlert.Config
                 "AutoAdjustPurgingFire",
                 false,
                 "Automatically set Purging Fire in blight posts to active cysts plus one."
+            );
+            _autoStopProductionWithoutRainwater = _config.Bind(
+                "Automation",
+                "AutoStopProductionWithoutRainwater",
+                false,
+                "Automatically disables building recipes while that building has no rainwater, then restores only recipes disabled by this option when rainwater returns."
             );
             _autoAdjustMultiplier = _config.Bind(
                 "Automation",
@@ -581,6 +588,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _autoAdjustPurgingFire.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool AutoStopProductionWithoutRainwater
+        {
+            get
+            {
+                Load();
+                return _autoStopProductionWithoutRainwater.Value;
+            }
+            set
+            {
+                Load();
+                _autoStopProductionWithoutRainwater.Value = value;
                 _config.Save();
             }
         }
