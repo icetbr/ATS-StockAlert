@@ -60,7 +60,7 @@ namespace StockAlert.UI.Panels
             private static GUIStyle _fieldStyle;
             private static GUIStyle _sectionStyle;
 
-            private Rect _windowRect = new Rect(40f, 40f, 430f, 470f);
+            private Rect _windowRect = new Rect(40f, 40f, 430f, 490f);
             private string _multiplierInput = "2.0";
             private string _buildingShortageIconScaleInput = "0.90";
             private GameObject _clickBlockerCanvasObject;
@@ -276,6 +276,24 @@ namespace StockAlert.UI.Panels
                     {
                         WorkerAssignmentQueue.ClearAll();
                         QueuedWorkerSlotCompanion.ClearAll();
+                    }
+                }
+
+                var showForestEaterDirection = GUILayout.Toggle(
+                    ConfigManager.ShowForestEaterDirection,
+                    "Grazer direction overlay",
+                    _toggleStyle
+                );
+                if (showForestEaterDirection != ConfigManager.ShowForestEaterDirection)
+                {
+                    ConfigManager.ShowForestEaterDirection = showForestEaterDirection;
+                    if (showForestEaterDirection)
+                    {
+                        ForestEaterDirectionOverlay.Refresh();
+                    }
+                    else
+                    {
+                        ForestEaterDirectionOverlay.Clear();
                     }
                 }
 

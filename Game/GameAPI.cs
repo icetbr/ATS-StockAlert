@@ -65,6 +65,7 @@ namespace StockAlert.Game
         private static PropertyInfo _piCamps;
         private static PropertyInfo _piFarms;
         private static PropertyInfo _piFarmfields;
+        private static PropertyInfo _piMines;
         private static PropertyInfo _piRainCatchers;
         private static PropertyInfo _piStorages;
         private static PropertyInfo _piConstructions;
@@ -116,6 +117,25 @@ namespace StockAlert.Game
             public float TimeLeft { get; }
         }
 
+        public sealed class ForestEaterDirectionInfo
+        {
+            public ForestEaterDirectionInfo(int index, Vector2Int current, Vector2Int target, List<Vector2Int> currentPath)
+            {
+                Index = index;
+                Current = current;
+                Target = target;
+                CurrentPath = currentPath ?? new List<Vector2Int>();
+            }
+
+            public int Index { get; }
+
+            public Vector2Int Current { get; }
+
+            public Vector2Int Target { get; }
+
+            public List<Vector2Int> CurrentPath { get; }
+        }
+
         public static Settings GetSettings()
         {
             if (_piMbSettings == null)
@@ -163,6 +183,41 @@ namespace StockAlert.Game
             {
                 return 0;
             }
+        }
+
+        public static List<ForestEaterDirectionInfo> GetForestEaterDirections()
+        {
+            var result = new List<ForestEaterDirectionInfo>();
+
+            try
+            {
+                var effects = GetEffectsState();
+                var states = effects?.forestEaters;
+                if (states == null)
+                {
+                    return result;
+                }
+
+                for (var i = 0; i < states.Count; i++)
+                {
+                    var state = states[i];
+                    if (state == null)
+                    {
+                        continue;
+                    }
+
+                    var path = state.currentPath != null
+                        ? new List<Vector2Int>(state.currentPath)
+                        : new List<Vector2Int>();
+                    result.Add(new ForestEaterDirectionInfo(i, state.current, state.target, path));
+                }
+            }
+            catch (Exception)
+            {
+                return result;
+            }
+
+            return result;
         }
 
         public static int GetAmountInNonWarehouseBuildings(string goodId)
@@ -1201,6 +1256,27 @@ namespace StockAlert.Game
             }
 
             return result;
+        }
+
+        public static List<Mine> GetMineBuildings()
+        {
+            var result = new List<ProductionBuilding>();
+
+            try
+            {
+                var buildingsService = GetBuildingsService();
+                if (buildingsService == null)
+                {
+                    return new List<Mine>();
+                }
+
+                AddProductionBuildingsFromDictionary(buildingsService, "Mines", ref _piMines, result);
+            }
+            catch (Exception)
+            {
+            }
+
+            return result.OfType<Mine>().ToList();
         }
 
         public static List<Farm> GetFarmBuildings()

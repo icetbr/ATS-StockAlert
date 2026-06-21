@@ -30,6 +30,12 @@ When assigning a villager to a building from the builders pool, it also preserve
 
 Hovering an assigned worker slot or a race portrait in the worker selection wheel highlights the villager who is assigned or would be assigned with a bright ring at their feet and a vertical yellow column above them.
 
+Holding Shift while the vanilla Alt worker overlay is open filters the overlay to the race currently selected at the cursor.
+
+Clicking Hearth decoration upgrade requirements selects a matching decoration for construction: Park for Comfort, Garden for Aesthetics, and Marble Fountain for Harmony.
+
+When the Grazer/Forest Eater event is active, it can show the Grazer's currently chosen path with an arrow marking the next direction.
+
 Hovering the bottom blightrot icon shows unlocked buildings that you currently have zero of, with building icons, excluding decorations, houses, warehouses, hearths, hydrants, roads, gathering posts, geysers, farm fields, mines, and similar source-only buildings.
 
 It can also show an overlay for finding items by Ctrl+clicking an item's icon. The overlay appears above buildings, events, and resource nodes that contain or provide that item.
@@ -42,7 +48,7 @@ It can also optionally highlight recipe buildings in the world when they have an
 - grey when the building has enabled shortage recipes, but none can currently be produced because ingredients are missing
 - normal white vanilla icon when the building is unmanned but none of its recipes are currently under threshold
 
-Building shortage indicators also show the matching shortage product icons next to the worker icon, and also mark farms when fields in range need seasonal work. Water-collecting buildings are also marked when their current water type has free tank capacity.
+Building shortage indicators also show the matching shortage product icons next to the worker icon, and also mark farms when fields in range need seasonal work. Mines are marked only for the active recipe matching the ore currently under the mine, and water-collecting buildings are marked when their current water type has free tank capacity.
 
 When a good is marked red because it cannot continue production after current in-progress productions, these building indicators can also extend to gathering/source posts that can provide its missing ingredients.
 
@@ -55,7 +61,7 @@ Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 
 Newly triggered shortages go at the top of the list.
 
-Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, timed orders alert, queued worker assignments, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
+Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, timed orders alert, queued worker assignments, Grazer direction overlay, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
 
 The timed orders alert is enabled by default and can be disabled in the `F8` settings window.
 
@@ -71,6 +77,8 @@ Some other default-on HUD helpers are also configured only in `BepInEx/config/St
 ```ini
 [HUD]
 ShowWorkerHoverHighlight = false
+FilterWorkerOverlayByRace = false
+EnableHearthDecorationRequirementShortcuts = false
 ShowZeroBuildingBlueprintHover = false
 ```
 
@@ -87,10 +95,11 @@ If a good has no production limit, it is ignored by the mod.
 7. Optional: enable building shortage indicators in the `F8` window to spot where extra staffing would help with current shortages.
 8. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders and mark matching race portraits in the building worker assignment wheel.
 9. Optional: enable queued worker assignments in the `F8` window, then Ctrl+click a race portrait to reserve that race for a worker slot until the next vacancy.
-10. Optional: enable ingredient wheel building stock in the `F8` window to show how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
-11. Optional: enable embarkation cost ranges in the `F8` window to show the possible cost range and current cost on embarkation bonuses.
-12. Optional: enable trade route profit in the `F8` window to show estimated percentage profit on trade route offers.
-13. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
+10. Optional: toggle the Grazer direction overlay in the `F8` window to show its chosen path during the Forest Eater event.
+11. Optional: enable ingredient wheel building stock in the `F8` window to show how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
+12. Optional: enable embarkation cost ranges in the `F8` window to show the possible cost range and current cost on embarkation bonuses.
+13. Optional: enable trade route profit in the `F8` window to show estimated percentage profit on trade route offers.
+14. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
 
 ## Auto-adjust option
 

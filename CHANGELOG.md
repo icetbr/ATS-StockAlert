@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5] - 2026-06-21
+
+### Added
+- Holding Shift while the vanilla Alt worker overlay is open now filters the overlay to the currently selected race.
+- Clicking Hearth decoration upgrade requirements now selects a matching decoration for construction: Park for Comfort, Garden for Aesthetics, and Marble Fountain for Harmony.
+- Building shortage indicators now also mark mines when the active recipe for the ore currently under the mine can supply a missing ingredient.
+- Added a default-on F8 option to show the Grazer/Forest Eater's currently chosen path and next direction.
+
 ## [1.2.4] - 2026-06-14
 
 ### Added

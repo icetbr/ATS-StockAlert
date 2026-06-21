@@ -1,6 +1,6 @@
 {
   "name": "StockAlert",
-  "version_number": "1.2.4",
+  "version_number": "1.2.5",
   "website_url": "https://github.com/mSterian/ATS-StockAlert",
   "description": "Warns on low stock, supports consumer-based auto-adjustment, and highlights useful recipe buildings. Builder icons, worker queues, seasonal alerts.",
   "dependencies": [

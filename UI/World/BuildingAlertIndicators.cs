@@ -73,6 +73,17 @@ namespace StockAlert.UI.World
                 ApplyGatheringIndicatorState(building, blockedIngredientGoods);
             }
 
+            foreach (var mine in GameAPI.GetMineBuildings())
+            {
+                if (mine == null)
+                {
+                    continue;
+                }
+
+                seenBuildings.Add(mine.Id);
+                ApplyMineIndicatorState(mine, blockedIngredientGoods);
+            }
+
             foreach (var farm in GameAPI.GetFarmBuildings())
             {
                 if (farm == null)
@@ -154,6 +165,14 @@ namespace StockAlert.UI.World
                 if (building != null && restored.Add(building.Id))
                 {
                     RestoreVanillaFor(building);
+                }
+            }
+
+            foreach (var mine in GameAPI.GetMineBuildings())
+            {
+                if (mine != null && restored.Add(mine.Id))
+                {
+                    RestoreVanillaFor(mine);
                 }
             }
 
@@ -262,6 +281,43 @@ namespace StockAlert.UI.World
             ApplySnapshot(building.Id, icon, active, color, null);
         }
 
+        private static void ApplyMineIndicatorState(Mine mine, HashSet<string> blockedIngredientGoods)
+        {
+            var icon = mine.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
+            if (icon == null)
+            {
+                return;
+            }
+
+            MakeIconClickThrough(icon);
+            var workerCount = mine.CountWorkers();
+            var maxWorkers = mine.Workplaces?.Length ?? 0;
+            var relevantGoods = GetRelevantMineGoods(mine, blockedIngredientGoods);
+            var hasRelevantMining = relevantGoods.Count > 0;
+
+            var active = false;
+            var color = WhiteColor;
+
+            if (workerCount == 0)
+            {
+                active = true;
+                color = hasRelevantMining ? RedColor : WhiteColor;
+            }
+            else if (hasRelevantMining && workerCount < maxWorkers)
+            {
+                active = true;
+                color = YellowColor;
+            }
+
+            ApplySnapshot(
+                mine.Id,
+                icon,
+                active,
+                color,
+                active && hasRelevantMining && ConfigManager.ShowBuildingSpecificItemIndicators ? relevantGoods : null
+            );
+        }
+
         private static void ApplyFarmIndicatorState(Farm farm)
         {
             var icon = farm.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
@@ -365,6 +421,41 @@ namespace StockAlert.UI.World
             }
 
             return false;
+        }
+
+        private static List<string> GetRelevantMineGoods(Mine mine, HashSet<string> blockedIngredientGoods)
+        {
+            var result = new List<string>();
+            if (mine?.state?.recipes == null ||
+                blockedIngredientGoods == null ||
+                blockedIngredientGoods.Count == 0)
+            {
+                return result;
+            }
+
+            foreach (var recipeState in mine.state.recipes)
+            {
+                if (recipeState == null || !recipeState.active || !mine.CanGather(recipeState))
+                {
+                    continue;
+                }
+
+                var recipe = mine.GetRecipeModel(recipeState);
+                var producedGood = recipe?.GetProducedGood();
+                if (string.IsNullOrWhiteSpace(producedGood) ||
+                    !blockedIngredientGoods.Contains(producedGood) ||
+                    mine.GetChargesLeft(producedGood) <= 0)
+                {
+                    continue;
+                }
+
+                if (!result.Contains(producedGood, StringComparer.OrdinalIgnoreCase))
+                {
+                    result.Add(producedGood);
+                }
+            }
+
+            return result;
         }
 
         private static List<RecipeState> GetRecipeStates(ProductionBuilding building)

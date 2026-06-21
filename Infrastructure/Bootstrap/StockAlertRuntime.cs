@@ -63,6 +63,7 @@ namespace StockAlert.Infrastructure.Bootstrap
                 TimedOrdersAlert.Clear();
                 WorkerAssignmentQueue.ClearAll();
                 ItemLocatorOverlay.Clear();
+                ForestEaterDirectionOverlay.Clear();
                 ClearSeasonEndingTradeRoutesAlert();
                 return;
             }
@@ -85,6 +86,7 @@ namespace StockAlert.Infrastructure.Bootstrap
                 WarehouseHaulerIndicators.Refresh();
                 IdleBuildersAlert.Refresh();
                 TimedOrdersAlert.Refresh();
+                ForestEaterDirectionOverlay.Refresh();
             }
 
             if (Time.unscaledTime >= _nextWorkerQueueRefreshTime)

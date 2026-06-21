@@ -22,6 +22,9 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showIdleBuildersAlert;
         private static ConfigEntry<bool> _showBuilderDemandCounter;
         private static ConfigEntry<bool> _showWorkerHoverHighlight;
+        private static ConfigEntry<bool> _filterWorkerOverlayByRace;
+        private static ConfigEntry<bool> _enableHearthDecorationRequirementShortcuts;
+        private static ConfigEntry<bool> _showForestEaterDirection;
         private static ConfigEntry<bool> _showZeroBuildingBlueprintHover;
         private static ConfigEntry<bool> _avoidAssigningCarryingBuilders;
         private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
@@ -127,6 +130,24 @@ namespace StockAlert.Config
                 "ShowWorkerHoverHighlight",
                 true,
                 "Show a world highlight ring when hovering assigned worker slots or worker selection race portraits."
+            );
+            _filterWorkerOverlayByRace = _config.Bind(
+                "HUD",
+                "FilterWorkerOverlayByRace",
+                true,
+                "When holding Shift during the vanilla Alt worker overlay, show only workplaces occupied by the currently selected race."
+            );
+            _enableHearthDecorationRequirementShortcuts = _config.Bind(
+                "HUD",
+                "EnableHearthDecorationRequirementShortcuts",
+                true,
+                "Click Hearth decoration upgrade requirements to select a matching decoration for construction."
+            );
+            _showForestEaterDirection = _config.Bind(
+                "HUD",
+                "ShowForestEaterDirection",
+                true,
+                "Show the Grazer's currently chosen path and next direction while the Forest Eater event is active."
             );
             _showZeroBuildingBlueprintHover = _config.Bind(
                 "HUD",
@@ -445,6 +466,51 @@ namespace StockAlert.Config
             {
                 Load();
                 _showWorkerHoverHighlight.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool FilterWorkerOverlayByRace
+        {
+            get
+            {
+                Load();
+                return _filterWorkerOverlayByRace.Value;
+            }
+            set
+            {
+                Load();
+                _filterWorkerOverlayByRace.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool EnableHearthDecorationRequirementShortcuts
+        {
+            get
+            {
+                Load();
+                return _enableHearthDecorationRequirementShortcuts.Value;
+            }
+            set
+            {
+                Load();
+                _enableHearthDecorationRequirementShortcuts.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowForestEaterDirection
+        {
+            get
+            {
+                Load();
+                return _showForestEaterDirection.Value;
+            }
+            set
+            {
+                Load();
+                _showForestEaterDirection.Value = value;
                 _config.Save();
             }
         }

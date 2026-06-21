@@ -31,6 +31,9 @@
     <Reference Include="Sirenix.Serialization">
       <HintPath>$(StormPath)\Against the Storm_Data\Managed\Sirenix.Serialization.dll</HintPath>
     </Reference>
+    <Reference Include="UniRx">
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\UniRx.dll</HintPath>
+    </Reference>
 
     <!-- Unity assemblies (correct order!) -->
     <Reference Include="UnityEngine">
