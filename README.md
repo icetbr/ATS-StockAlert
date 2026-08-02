@@ -20,9 +20,11 @@ It can also optionally show the embarkation bonus cost range on the top-left and
 
 It can also optionally show estimated trade route profit as a percentage compared to selling the raw material inputs at the bottom of the production chain.
 
+It can also optionally use higher-resolution shadow maps, more shadow cascades, and soft shadows to reduce blocky shadows.
+
 It also shows a countdown badge on bottom-left event modifier icons when the modifier has a repeating time-based trigger, such as Friend or Foe.
 
-It also shows alerts when timed orders have 1 minute and 30 seconds remaining.
+It also shows alerts when timed orders have 1 minute and 30 seconds remaining, when a Hearth loses an upgrade level, and when a settlement save is loaded so you remember to check the mission objective.
 
 It also changes the base-game top-left builder counter from `available` to `available/needed`, where `needed` is how many additional builders could immediately work on active construction sites. Deactivated construction sites and sites blocked by missing construction materials are not counted.
 
@@ -42,13 +44,13 @@ It can also show an overlay for finding items by Ctrl+clicking an item's icon. T
 
 It can also optionally show a persistent alert when you have idle builders, and optionally pause with an alert 3 seconds before a season ends so you can check trade routes.
 
-It can also optionally highlight recipe buildings in the world when they have an enabled recipe for goods that are currently under threshold:
+It can also optionally highlight recipe buildings in the world when they have an enabled recipe for goods that are currently under threshold or below that building's local recipe limit:
 - red when the building can help, but has no workers assigned
 - yellow when the building can help, has at least one worker, but is not fully staffed
 - grey when the building has enabled shortage recipes, but none can currently be produced because ingredients are missing
 - normal white vanilla icon when the building is unmanned but none of its recipes are currently under threshold
 
-Building shortage indicators also show the matching shortage product icons next to the worker icon, and also mark farms when fields in range need seasonal work. Mines are marked only for the active recipe matching the ore currently under the mine, and water-collecting buildings are marked when their current water type has free tank capacity.
+Building shortage indicators also show the matching shortage product icons next to the worker icon, respect per-building local recipe limits, and also mark farms when fields in range need seasonal work. Mines are marked only for the active recipe matching the ore currently under the mine, and water-collecting buildings are marked when their current water type has free tank capacity.
 
 When a good is marked red because it cannot continue production after current in-progress productions, these building indicators can also extend to gathering/source posts that can provide its missing ingredients.
 
@@ -61,7 +63,7 @@ Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 
 Newly triggered shortages go at the top of the list.
 
-Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, timed orders alert, queued worker assignments, Grazer direction overlay, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
+Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, timed orders alert, queued worker assignments, Grazer direction overlay, high quality shadows, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
 
 The timed orders alert is enabled by default and can be disabled in the `F8` settings window.
 
@@ -80,6 +82,8 @@ ShowWorkerHoverHighlight = false
 FilterWorkerOverlayByRace = false
 EnableHearthDecorationRequirementShortcuts = false
 ShowZeroBuildingBlueprintHover = false
+HearthLevelDownAlert = false
+MissionObjectiveLoadAlert = false
 ```
 
 If a good has no production limit, it is ignored by the mod.
@@ -96,10 +100,11 @@ If a good has no production limit, it is ignored by the mod.
 8. Optional: enable builder status icons in the `F8` window to distinguish idle free builders from busy free builders and mark matching race portraits in the building worker assignment wheel.
 9. Optional: enable queued worker assignments in the `F8` window, then Ctrl+click a race portrait to reserve that race for a worker slot until the next vacancy.
 10. Optional: toggle the Grazer direction overlay in the `F8` window to show its chosen path during the Forest Eater event.
-11. Optional: enable ingredient wheel building stock in the `F8` window to show how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
-12. Optional: enable embarkation cost ranges in the `F8` window to show the possible cost range and current cost on embarkation bonuses.
-13. Optional: enable trade route profit in the `F8` window to show estimated percentage profit on trade route offers.
-14. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
+11. Optional: enable high quality shadows in the `F8` window to reduce blocky shadows at a possible GPU performance cost.
+12. Optional: enable ingredient wheel building stock in the `F8` window to show how much of each insufficient ingredient is currently sitting in non-warehouse buildings.
+13. Optional: enable embarkation cost ranges in the `F8` window to show the possible cost range and current cost on embarkation bonuses.
+14. Optional: enable trade route profit in the `F8` window to show estimated percentage profit on trade route offers.
+15. Ctrl+click an item's icon to show an overlay over buildings, events, and resource nodes that contain or provide that item.
 
 ## Auto-adjust option
 

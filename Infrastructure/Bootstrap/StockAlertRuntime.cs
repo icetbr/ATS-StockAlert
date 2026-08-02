@@ -22,6 +22,7 @@ namespace StockAlert.Infrastructure.Bootstrap
         private GameDate _seasonEndingAlertDate;
         private News _seasonEndingAlertNews;
         private bool _wasGameActive;
+        private bool _missionObjectiveAlertShown;
 
         public static void Initialize()
         {
@@ -61,15 +62,25 @@ namespace StockAlert.Infrastructure.Bootstrap
                 WarehouseHaulerIndicators.Clear();
                 IdleBuildersAlert.Clear();
                 TimedOrdersAlert.Clear();
+                HearthLevelDownAlert.Clear();
+                MissionObjectiveLoadAlert.Clear();
                 WorkerAssignmentQueue.ClearAll();
                 ItemLocatorOverlay.Clear();
                 ForestEaterDirectionOverlay.Clear();
                 ClearSeasonEndingTradeRoutesAlert();
+                _missionObjectiveAlertShown = false;
                 return;
+            }
+
+            if (!_missionObjectiveAlertShown)
+            {
+                MissionObjectiveLoadAlert.Fire();
+                _missionObjectiveAlertShown = true;
             }
 
             _wasGameActive = true;
 
+            HighQualityShadowTweak.Refresh();
             UpdateSeasonEndingTradeRoutesAlert();
 
             if (Time.unscaledTime >= _nextRefreshTime)
@@ -86,6 +97,7 @@ namespace StockAlert.Infrastructure.Bootstrap
                 WarehouseHaulerIndicators.Refresh();
                 IdleBuildersAlert.Refresh();
                 TimedOrdersAlert.Refresh();
+                HearthLevelDownAlert.Refresh();
                 ForestEaterDirectionOverlay.Refresh();
             }
 

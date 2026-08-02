@@ -25,6 +25,7 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _filterWorkerOverlayByRace;
         private static ConfigEntry<bool> _enableHearthDecorationRequirementShortcuts;
         private static ConfigEntry<bool> _showForestEaterDirection;
+        private static ConfigEntry<bool> _highQualityShadows;
         private static ConfigEntry<bool> _showZeroBuildingBlueprintHover;
         private static ConfigEntry<bool> _avoidAssigningCarryingBuilders;
         private static ConfigEntry<bool> _enableQueuedWorkerAssignments;
@@ -35,6 +36,8 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _tradeRouteProfitIgnoreDisabledRecipes;
         private static ConfigEntry<bool> _seasonEndingTradeRoutesAlert;
         private static ConfigEntry<bool> _timedOrdersAlert;
+        private static ConfigEntry<bool> _hearthLevelDownAlert;
+        private static ConfigEntry<bool> _missionObjectiveLoadAlert;
         private static ConfigEntry<bool> _autoAdjustProductionLimits;
         private static ConfigEntry<bool> _autoAdjustPurgingFire;
         private static ConfigEntry<float> _autoAdjustMultiplier;
@@ -149,6 +152,12 @@ namespace StockAlert.Config
                 true,
                 "Show the Grazer's currently chosen path and next direction while the Forest Eater event is active."
             );
+            _highQualityShadows = _config.Bind(
+                "Graphics",
+                "HighQualityShadows",
+                false,
+                "Use higher-resolution shadow maps, more cascades, and soft shadows to reduce blocky shadows. May reduce performance."
+            );
             _showZeroBuildingBlueprintHover = _config.Bind(
                 "HUD",
                 "ShowZeroBuildingBlueprintHover",
@@ -208,6 +217,18 @@ namespace StockAlert.Config
                 "TimedOrdersAlert",
                 true,
                 "Show alerts when timed orders have 1 minute and 30 seconds remaining."
+            );
+            _hearthLevelDownAlert = _config.Bind(
+                "HUD",
+                "HearthLevelDownAlert",
+                true,
+                "Show an alert when a Hearth loses an upgrade level."
+            );
+            _missionObjectiveLoadAlert = _config.Bind(
+                "HUD",
+                "MissionObjectiveLoadAlert",
+                true,
+                "Show an alert when a settlement save is loaded to remind you to check the mission objective."
             );
             _autoAdjustProductionLimits = _config.Bind(
                 "Automation",
@@ -515,6 +536,21 @@ namespace StockAlert.Config
             }
         }
 
+        public static bool HighQualityShadows
+        {
+            get
+            {
+                Load();
+                return _highQualityShadows.Value;
+            }
+            set
+            {
+                Load();
+                _highQualityShadows.Value = value;
+                _config.Save();
+            }
+        }
+
         public static bool ShowZeroBuildingBlueprintHover
         {
             get
@@ -586,6 +622,36 @@ namespace StockAlert.Config
             {
                 Load();
                 _timedOrdersAlert.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool HearthLevelDownAlert
+        {
+            get
+            {
+                Load();
+                return _hearthLevelDownAlert.Value;
+            }
+            set
+            {
+                Load();
+                _hearthLevelDownAlert.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool MissionObjectiveLoadAlert
+        {
+            get
+            {
+                Load();
+                return _missionObjectiveLoadAlert.Value;
+            }
+            set
+            {
+                Load();
+                _missionObjectiveLoadAlert.Value = value;
                 _config.Save();
             }
         }

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.6] - 2026-08-02
+
+### Added
+- Added an off-by-default F8 option for higher-quality shadows that increases shadow map resolution, uses more shadow cascades, and enables soft shadows.
+- Added a default-on alert when a Hearth loses an upgrade level. It can be disabled in the config file.
+- Added a default-on alert when a settlement save is loaded to remind you to check the mission objective. It can be disabled in the config file.
+
+### Changed
+- Building shortage indicators now also respect per-building local recipe limits, not only global production limits.
+
 ## [1.2.5] - 2026-06-21
 
 ### Added

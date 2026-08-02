@@ -60,7 +60,7 @@ namespace StockAlert.UI.Panels
             private static GUIStyle _fieldStyle;
             private static GUIStyle _sectionStyle;
 
-            private Rect _windowRect = new Rect(40f, 40f, 430f, 490f);
+            private Rect _windowRect = new Rect(40f, 40f, 430f, 510f);
             private string _multiplierInput = "2.0";
             private string _buildingShortageIconScaleInput = "0.90";
             private GameObject _clickBlockerCanvasObject;
@@ -294,6 +294,24 @@ namespace StockAlert.UI.Panels
                     else
                     {
                         ForestEaterDirectionOverlay.Clear();
+                    }
+                }
+
+                var highQualityShadows = GUILayout.Toggle(
+                    ConfigManager.HighQualityShadows,
+                    "High quality shadows",
+                    _toggleStyle
+                );
+                if (highQualityShadows != ConfigManager.HighQualityShadows)
+                {
+                    ConfigManager.HighQualityShadows = highQualityShadows;
+                    if (highQualityShadows)
+                    {
+                        HighQualityShadowTweak.Refresh();
+                    }
+                    else
+                    {
+                        HighQualityShadowTweak.Restore();
                     }
                 }
 

@@ -219,9 +219,9 @@ namespace StockAlert.UI.World
             MakeIconClickThrough(icon);
             var workerCount = building.CountWorkers();
             var maxWorkers = building.Workplaces?.Length ?? 0;
-            var lowProductGoods = GetEnabledLowRecipeGoods(workshop, lowGoods);
+            var lowProductGoods = GetDemandedRecipeGoods(workshop, lowGoods);
             var hasRelevantLowRecipe = lowProductGoods.Count > 0;
-            var hasCraftableLowRecipe = hasRelevantLowRecipe && HasCraftableEnabledLowRecipe(workshop, lowGoods, settings);
+            var hasCraftableLowRecipe = hasRelevantLowRecipe && HasCraftableDemandedRecipe(workshop, lowGoods, settings);
             var hasRelevantIngredientSupplyRecipe = workshop.Recipes.Any(r => IsEnabledGatheringSupplyRecipe(r, blockedIngredientGoods, settings));
             var hasRelevantWork = hasRelevantLowRecipe || hasRelevantIngredientSupplyRecipe;
             var hasOnlyIngredientBlockedWork = hasRelevantLowRecipe &&
@@ -523,17 +523,17 @@ namespace StockAlert.UI.World
             return spriteRenderer != null ? spriteRenderer.color : Color.clear;
         }
 
-        private static List<string> GetEnabledLowRecipeGoods(IWorkshop workshop, HashSet<string> lowGoods)
+        private static List<string> GetDemandedRecipeGoods(IWorkshop workshop, HashSet<string> lowGoods)
         {
             var result = new List<string>();
-            if (workshop?.Recipes == null || lowGoods == null || lowGoods.Count == 0)
+            if (workshop?.Recipes == null)
             {
                 return result;
             }
 
             foreach (var recipe in workshop.Recipes)
             {
-                if (!IsEnabledLowRecipe(recipe, lowGoods) ||
+                if (!IsDemandedRecipe(workshop, recipe, lowGoods) ||
                     result.Any(g => string.Equals(g, recipe.productName, StringComparison.OrdinalIgnoreCase)))
                 {
                     continue;
@@ -549,16 +549,16 @@ namespace StockAlert.UI.World
             return result;
         }
 
-        private static bool HasCraftableEnabledLowRecipe(IWorkshop workshop, HashSet<string> lowGoods, Settings settings)
+        private static bool HasCraftableDemandedRecipe(IWorkshop workshop, HashSet<string> lowGoods, Settings settings)
         {
-            if (workshop?.Recipes == null || lowGoods == null || lowGoods.Count == 0 || settings == null)
+            if (workshop?.Recipes == null || settings == null)
             {
                 return false;
             }
 
             foreach (var recipeState in workshop.Recipes)
             {
-                if (!IsEnabledLowRecipe(recipeState, lowGoods))
+                if (!IsDemandedRecipe(workshop, recipeState, lowGoods))
                 {
                     continue;
                 }
@@ -966,16 +966,43 @@ namespace StockAlert.UI.World
             }
         }
 
-        private static bool IsEnabledLowRecipe(WorkshopRecipeState recipeState, HashSet<string> lowGoods)
+        private static bool IsDemandedRecipe(IWorkshop workshop, WorkshopRecipeState recipeState, HashSet<string> lowGoods)
         {
             if (recipeState == null ||
                 !recipeState.active ||
-                string.IsNullOrWhiteSpace(recipeState.productName) ||
-                !lowGoods.Contains(recipeState.productName))
+                string.IsNullOrWhiteSpace(recipeState.productName))
             {
                 return false;
             }
-            return true;
+
+            return (lowGoods != null && lowGoods.Contains(recipeState.productName)) ||
+                   IsBelowLocalRecipeLimit(workshop, recipeState);
+        }
+
+        private static bool IsBelowLocalRecipeLimit(IWorkshop workshop, WorkshopRecipeState recipeState)
+        {
+            if (workshop?.Base == null ||
+                recipeState == null ||
+                !recipeState.isLimitLocal ||
+                recipeState.limit <= 0 ||
+                string.IsNullOrWhiteSpace(recipeState.productName))
+            {
+                return false;
+            }
+
+            return GetCombinedStoredAmount(workshop.Base, recipeState.productName) < recipeState.limit;
+        }
+
+        private static int GetCombinedStoredAmount(ProductionBuilding building, string goodId)
+        {
+            if (building == null || string.IsNullOrWhiteSpace(goodId))
+            {
+                return 0;
+            }
+
+            var storageAmount = GameAPI.GetStoredAmount(null, goodId);
+            var localAmount = building.ProductionStorage?.GetAmount(goodId) ?? 0;
+            return storageAmount + localAmount;
         }
 
         private static bool IsEnabledGatheringSupplyRecipe(
