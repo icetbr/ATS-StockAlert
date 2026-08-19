@@ -257,13 +257,13 @@ namespace StockAlert.Config
                 "Automation",
                 "AutoPauseOnNoRainwater",
                 false,
-                "Automatically pause buildings with running Rain Engines when the rainwater type they use is fully depleted."
+                "Automatically disable enabled recipes in buildings with running Rain Engines when the rainwater type they use is fully depleted. Current production cycles are allowed to finish."
             );
             _autoResumeOnRainwater = _config.Bind(
                 "Automation",
                 "AutoResumeOnRainwater",
                 true,
-                "Automatically resume buildings paused by the rainwater auto-pause once their rainwater type is available again. Buildings manually resumed by the player are left alone."
+                "Automatically re-enable recipes disabled by the rainwater automation once their rainwater type is available again. Recipes disabled manually by the player are left alone."
             );
             _hudAnchor = _config.Bind(
                 "HUD",

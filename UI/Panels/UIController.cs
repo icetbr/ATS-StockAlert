@@ -443,7 +443,7 @@ namespace StockAlert.UI.Panels
 
                 var autoPauseOnNoRainwater = GUILayout.Toggle(
                     ConfigManager.AutoPauseOnNoRainwater,
-                    "Auto-pause buildings when out of rainwater",
+                    "Auto-disable recipes when out of rainwater",
                     _toggleStyle
                 );
                 if (autoPauseOnNoRainwater != ConfigManager.AutoPauseOnNoRainwater)
@@ -455,7 +455,7 @@ namespace StockAlert.UI.Panels
                 GUILayout.Space(20f);
                 var autoResumeOnRainwater = GUILayout.Toggle(
                     ConfigManager.AutoResumeOnRainwater,
-                    "Auto-resume when rainwater returns",
+                    "Auto-enable recipes when rainwater returns",
                     _toggleStyle,
                     GUILayout.Width(280f)
                 );

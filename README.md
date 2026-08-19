@@ -12,7 +12,7 @@ It can also optionally auto-adjust production limits for all goods you currently
 
 It can also optionally auto-adjust the Purging Fire production limit in blight posts to the number of existing cysts plus one.
 
-It can also optionally auto-pause buildings with running Rain Engines when the rainwater type they use runs out, and auto-resume them once rainwater is available again.
+It can also optionally disable enabled recipes in buildings with running Rain Engines when the rainwater type they use runs out, and re-enable only those recipes once rainwater is available again.
 
 It can also optionally queue a chosen race for a worker slot by Ctrl+clicking a race portrait, so the slot auto-fills the next time it becomes empty and a matching free villager becomes available.
 
@@ -127,16 +127,17 @@ Also Optional: enable rainwater auto-pause in the `F8` window to pause buildings
 - when enabled, the mod sets the Purging Fire production limit in blight posts to `existing cysts + 1`
 - disabling the option stops further automatic changes, but does not restore the previous manual limit
 
-## Rainwater auto-pause option
+## Rainwater recipe auto-disable option
 
 - off by default
 - when enabled, the mod watches every building that has Rain Engines installed and switched on (any engine knob set above 0)
-- when the rainwater type that building uses (Drizzle, Clearance, or Storm Water) is fully depleted city-wide, the building is paused, exactly as if you had clicked its in-game pause button
-- a news alert lists the buildings that were paused
-- by default, buildings paused this way are automatically resumed once their rainwater type is available again (a small buffer of roughly 10% of tank capacity, up to 10 water, is required before resuming to avoid rapid pause/resume cycles); this auto-resume can be disabled separately
-- only buildings paused by the mod are ever resumed by it - if you resume a paused building manually, the mod stops managing it until it pauses it again; buildings you paused yourself are never touched
+- when the rainwater type that building uses (Drizzle, Clearance, or Storm Water) is fully depleted city-wide, the mod disables the building's currently enabled recipes instead of sleeping/pausing the building
+- current production cycles are left alone; disabling the recipe only prevents new cycles from being started
+- a news alert lists the buildings whose recipes were disabled
+- by default, recipes disabled this way are automatically re-enabled once their rainwater type is available again (a small buffer of roughly 10% of tank capacity, up to 10 water, is required before re-enabling to avoid rapid disable/enable cycles); this auto-enable can be disabled separately
+- only recipes disabled by the mod are ever re-enabled by it; recipes disabled manually by the player are never touched
 - buildings without Rain Engines installed, with all engines set to 0, or with rainpunk not yet unlocked are ignored
-- disabling the option stops further automatic changes, but does not resume buildings that are already paused
+- disabling the option stops further automatic changes, but does not re-enable recipes that are already disabled
 
 ## Queued worker assignments
 
