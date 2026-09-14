@@ -69,7 +69,10 @@ namespace StockAlert.UI.HUD
                 RefreshAlertOrdering(belowThreshold);
 
                 belowThreshold = belowThreshold
-                    .OrderByDescending(g => _alertOrder.TryGetValue(g.Id, out var order) ? order : 0L)
+                    .OrderByDescending(g => ConfigManager.HudSort == ConfigManager.HudSortMode.BiggestDeficit
+                        ? (long)g.Threshold - g.CurrentAmount
+                        : 0L)
+                    .ThenByDescending(g => _alertOrder.TryGetValue(g.Id, out var order) ? order : 0L)
                     .ThenBy(g => g.DisplayName)
                     .ToList();
 

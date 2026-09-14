@@ -106,6 +106,17 @@ namespace StockAlert.UI.World
                 ApplyRainCatcherIndicatorState(rainCatcher);
             }
 
+            foreach (var hearth in GameAPI.GetHearthBuildings())
+            {
+                if (hearth == null)
+                {
+                    continue;
+                }
+
+                seenBuildings.Add(hearth.Id);
+                ApplyHearthIndicatorState(hearth);
+            }
+
             var removed = LastApplied.Keys.Where(id => !seenBuildings.Contains(id)).ToList();
             foreach (var id in removed)
             {
@@ -124,6 +135,13 @@ namespace StockAlert.UI.World
             var workshop = GetRecipeBuildings().FirstOrDefault(w => ReferenceEquals(w?.Base?.BuildingView, buildingView));
             if (workshop?.Base == null)
             {
+                var hearth = GameAPI.GetHearthBuildings().FirstOrDefault(b => ReferenceEquals(b?.BuildingView, buildingView));
+                if (hearth != null)
+                {
+                    ApplyHearthIndicatorState(hearth);
+                    return;
+                }
+
                 var rainCatcher = GameAPI.GetRainCatcherBuildings().FirstOrDefault(b => ReferenceEquals(b?.BuildingView, buildingView));
                 if (rainCatcher != null)
                 {
@@ -189,6 +207,14 @@ namespace StockAlert.UI.World
                 if (rainCatcher != null && restored.Add(rainCatcher.Id))
                 {
                     RestoreVanillaFor(rainCatcher);
+                }
+            }
+
+            foreach (var hearth in GameAPI.GetHearthBuildings())
+            {
+                if (hearth != null && restored.Add(hearth.Id))
+                {
+                    RestoreVanillaFor(hearth);
                 }
             }
 
@@ -376,6 +402,28 @@ namespace StockAlert.UI.World
             }
 
             ApplySnapshot(rainCatcher.Id, icon, active, color, null);
+        }
+
+        private static void ApplyHearthIndicatorState(Hearth hearth)
+        {
+            var icon = hearth.BuildingView?.transform?.Find("ToRotate/UI/NoWorkersIcon")?.gameObject;
+            if (icon == null)
+            {
+                return;
+            }
+
+            MakeIconClickThrough(icon);
+            var hasNoFirekeeper = hearth.CountWorkers() == 0;
+            var active = hearth.state != null &&
+                         hearth.state.finished &&
+                         !hearth.state.isSleeping &&
+                         hasNoFirekeeper;
+            var needsFuelDelivery = active &&
+                                    hearth.state.isUsingFire &&
+                                    hearth.model != null &&
+                                    hearth.state.burningTimeLeft < hearth.model.minBurningTimeToRequestFuel;
+
+            ApplySnapshot(hearth.Id, icon, active, needsFuelDelivery ? RedColor : WhiteColor, null);
         }
 
         private static bool HasRelevantGatheringRecipe(ProductionBuilding building, HashSet<string> blockedIngredientGoods)

@@ -138,6 +138,22 @@ namespace StockAlert.UI.Panels
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
 
+                GUILayout.BeginHorizontal();
+                GUILayout.Space(20f);
+                GUILayout.Label("HUD sort", _bodyStyle, GUILayout.Width(92f));
+                if (GUILayout.Toggle(ConfigManager.HudSort == ConfigManager.HudSortMode.NewestFirst, "Newest first", _buttonStyle) &&
+                    ConfigManager.HudSort != ConfigManager.HudSortMode.NewestFirst)
+                {
+                    ConfigManager.HudSort = ConfigManager.HudSortMode.NewestFirst;
+                }
+                if (GUILayout.Toggle(ConfigManager.HudSort == ConfigManager.HudSortMode.BiggestDeficit, "Biggest deficit", _buttonStyle) &&
+                    ConfigManager.HudSort != ConfigManager.HudSortMode.BiggestDeficit)
+                {
+                    ConfigManager.HudSort = ConfigManager.HudSortMode.BiggestDeficit;
+                }
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+
                 var buildingIndicators = GUILayout.Toggle(
                     ConfigManager.ShowBuildingAlertIndicators,
                     "Building shortage indicators",
@@ -153,6 +169,24 @@ namespace StockAlert.UI.Panels
                     else
                     {
                         BuildingAlertIndicators.RestoreVanilla();
+                    }
+                }
+
+                var showBuildingPlacementGrid = GUILayout.Toggle(
+                    ConfigManager.ShowBuildingPlacementGrid,
+                    "Building placement grid",
+                    _toggleStyle
+                );
+                if (showBuildingPlacementGrid != ConfigManager.ShowBuildingPlacementGrid)
+                {
+                    ConfigManager.ShowBuildingPlacementGrid = showBuildingPlacementGrid;
+                    if (showBuildingPlacementGrid)
+                    {
+                        BuildingPlacementGrid.Refresh();
+                    }
+                    else
+                    {
+                        BuildingPlacementGrid.Clear();
                     }
                 }
 

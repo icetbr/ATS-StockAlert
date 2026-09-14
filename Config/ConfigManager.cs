@@ -13,6 +13,7 @@ namespace StockAlert.Config
         private static ConfigEntry<KeyboardShortcut> _toggleSettingsKey;
         private static ConfigEntry<bool> _showHud;
         private static ConfigEntry<bool> _movableHud;
+        private static ConfigEntry<HudSortMode> _hudSort;
         private static ConfigEntry<bool> _showBuildingAlertIndicators;
         private static ConfigEntry<bool> _showBuildingSpecificItemIndicators;
         private static ConfigEntry<float> _buildingShortageIconScale;
@@ -22,6 +23,8 @@ namespace StockAlert.Config
         private static ConfigEntry<bool> _showIdleBuildersAlert;
         private static ConfigEntry<bool> _showBuilderDemandCounter;
         private static ConfigEntry<bool> _showWorkerHoverHighlight;
+        private static ConfigEntry<bool> _showWarehouseDeliveryStatusIcon;
+        private static ConfigEntry<bool> _showBuildingPlacementGrid;
         private static ConfigEntry<bool> _filterWorkerOverlayByRace;
         private static ConfigEntry<bool> _enableHearthDecorationRequirementShortcuts;
         private static ConfigEntry<bool> _showForestEaterDirection;
@@ -51,6 +54,12 @@ namespace StockAlert.Config
             Right
         }
 
+        public enum HudSortMode
+        {
+            NewestFirst,
+            BiggestDeficit
+        }
+
         public static void Load()
         {
             if (_config != null)
@@ -71,11 +80,23 @@ namespace StockAlert.Config
                 true,
                 "Show or hide the Stock Alert HUD."
             );
+            _showWarehouseDeliveryStatusIcon = _config.Bind(
+                "HUD",
+                "ShowWarehouseDeliveryStatusIcon",
+                true,
+                "Show the game's right-pointing arrow in worker slots while carrying goods to a warehouse."
+            );
             _movableHud = _config.Bind(
                 "HUD",
                 "MovableHUD",
                 false,
                 "Allow dragging the Stock Alert HUD."
+            );
+            _hudSort = _config.Bind(
+                "HUD",
+                "HudSort",
+                HudSortMode.NewestFirst,
+                "Sort stock alerts by newest shortage first or biggest deficit (wanted stock minus current stock)."
             );
             _showBuildingAlertIndicators = _config.Bind(
                 "HUD",
@@ -133,6 +154,12 @@ namespace StockAlert.Config
                 "ShowWorkerHoverHighlight",
                 true,
                 "Show a world highlight ring when hovering assigned worker slots or worker selection race portraits."
+            );
+            _showBuildingPlacementGrid = _config.Bind(
+                "HUD",
+                "ShowBuildingPlacementGrid",
+                true,
+                "Show the settlement tile grid while placing or moving a building."
             );
             _filterWorkerOverlayByRace = _config.Bind(
                 "HUD",
@@ -306,6 +333,30 @@ namespace StockAlert.Config
             {
                 Load();
                 _movableHud.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowWarehouseDeliveryStatusIcon
+        {
+            get
+            {
+                Load();
+                return _showWarehouseDeliveryStatusIcon.Value;
+            }
+        }
+
+        public static HudSortMode HudSort
+        {
+            get
+            {
+                Load();
+                return _hudSort.Value;
+            }
+            set
+            {
+                Load();
+                _hudSort.Value = value;
                 _config.Save();
             }
         }
@@ -487,6 +538,21 @@ namespace StockAlert.Config
             {
                 Load();
                 _showWorkerHoverHighlight.Value = value;
+                _config.Save();
+            }
+        }
+
+        public static bool ShowBuildingPlacementGrid
+        {
+            get
+            {
+                Load();
+                return _showBuildingPlacementGrid.Value;
+            }
+            set
+            {
+                Load();
+                _showBuildingPlacementGrid.Value = value;
                 _config.Save();
             }
         }

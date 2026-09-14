@@ -16,7 +16,9 @@ namespace StockAlert.UI.HUD
         private static GUIStyle _panelStyle;
         private static GUIStyle _titleStyle;
         private static GUIStyle _itemStyle;
+        private static GUIStyle _costStyle;
         private static GUIStyle _emptyStyle;
+        private static Texture2D _panelTexture;
 
         private bool _hovered;
         private List<BuildingRow> _buildings = new List<BuildingRow>();
@@ -84,13 +86,34 @@ namespace StockAlert.UI.HUD
 
             EnsureStyles();
 
-            const float width = 360f;
             const float titleHeight = 28f;
             const float lineHeight = 36f;
-            const float iconSize = 31f;
+            const float buildingIconSize = 31f;
+            const float materialIconSize = 23f;
             const float padding = 12f;
+            const float buildingIconGap = 9f;
+            const float costSectionGap = 18f;
+            const float materialTextGap = 4f;
+            const float materialGap = 12f;
             var shownCount = Mathf.Min(_buildings.Count, 14);
             var hasMore = _buildings.Count > shownCount;
+            var nameWidth = GetNameColumnWidth(shownCount);
+            var costsWidth = GetCostsColumnWidth(shownCount, materialIconSize, materialTextGap, materialGap);
+            var desiredWidth = padding * 2f + buildingIconSize + buildingIconGap + nameWidth;
+            if (costsWidth > 0f)
+            {
+                desiredWidth += costSectionGap + costsWidth;
+            }
+
+            var maxWidth = Mathf.Max(420f, Screen.width - 16f);
+            if (desiredWidth > maxWidth)
+            {
+                var nameWidthReduction = Mathf.Min(nameWidth - 100f, desiredWidth - maxWidth);
+                nameWidth -= nameWidthReduction;
+                desiredWidth -= nameWidthReduction;
+            }
+
+            var width = Mathf.Clamp(desiredWidth, 420f, maxWidth);
             var height = padding * 2f + titleHeight + (shownCount > 0 ? shownCount * lineHeight : 28f) + (hasMore ? lineHeight : 0f);
             var x = Screen.width - width - 24f;
             var y = Screen.height - height - 24f;
@@ -111,8 +134,17 @@ namespace StockAlert.UI.HUD
             for (var i = 0; i < shownCount; i++)
             {
                 var row = _buildings[i];
-                DrawSprite(row.Icon, new Rect(x + padding, lineY + 2.5f, iconSize, iconSize));
-                GUI.Label(new Rect(x + padding + iconSize + 9f, lineY + 5f, width - padding * 2f - iconSize - 9f, lineHeight), row.Name, _itemStyle);
+                var buildingIconX = x + padding;
+                var nameX = buildingIconX + buildingIconSize + buildingIconGap;
+                DrawSprite(row.Icon, new Rect(buildingIconX, lineY + 2.5f, buildingIconSize, buildingIconSize));
+                GUI.Label(new Rect(nameX, lineY, nameWidth, lineHeight), row.Name, _itemStyle);
+
+                if (row.Costs.Count > 0)
+                {
+                    var costX = nameX + nameWidth + costSectionGap;
+                    DrawCosts(row.Costs, costX, lineY, lineHeight, materialIconSize, materialTextGap, materialGap);
+                }
+
                 lineY += lineHeight;
             }
 
@@ -126,11 +158,87 @@ namespace StockAlert.UI.HUD
         {
             _nextRefreshTime = Time.unscaledTime + 0.5f;
             _buildings = GameAPI.GetUnlockedZeroCountBuildings()
-                .Select(info => new BuildingRow(GameAPI.GetBuildingDisplayName(info.Model), info.Model?.icon))
+                .Select(info => new BuildingRow(
+                    GameAPI.GetBuildingDisplayName(info.Model),
+                    info.Model?.icon,
+                    GameAPI.GetBuildingConstructionCosts(info.Model)
+                ))
                 .Where(row => !string.IsNullOrWhiteSpace(row.Name))
                 .GroupBy(row => row.Name)
                 .Select(group => group.First())
                 .ToList();
+        }
+
+        private float GetNameColumnWidth(int shownCount)
+        {
+            var width = 140f;
+            for (var i = 0; i < shownCount; i++)
+            {
+                width = Mathf.Max(width, _itemStyle.CalcSize(new GUIContent(_buildings[i].Name)).x + 4f);
+            }
+
+            return Mathf.Min(width, 240f);
+        }
+
+        private float GetCostsColumnWidth(int shownCount, float iconSize, float textGap, float itemGap)
+        {
+            var maxWidth = 0f;
+            for (var i = 0; i < shownCount; i++)
+            {
+                var rowWidth = 0f;
+                var costs = _buildings[i].Costs;
+                for (var j = 0; j < costs.Count; j++)
+                {
+                    var cost = costs[j];
+                    rowWidth += iconSize + textGap + GetCostTextWidth(cost);
+                    if (j < costs.Count - 1)
+                    {
+                        rowWidth += itemGap;
+                    }
+                }
+
+                maxWidth = Mathf.Max(maxWidth, rowWidth);
+            }
+
+            return maxWidth;
+        }
+
+        private static void DrawCosts(
+            IReadOnlyList<GameAPI.BuildingCostInfo> costs,
+            float x,
+            float y,
+            float lineHeight,
+            float iconSize,
+            float textGap,
+            float itemGap)
+        {
+            var iconY = y + (lineHeight - iconSize) * 0.5f;
+            for (var i = 0; i < costs.Count; i++)
+            {
+                var cost = costs[i];
+                DrawSprite(cost.Icon, new Rect(x, iconY, iconSize, iconSize));
+                x += iconSize + textGap;
+
+                var text = GetCostText(cost);
+                var textWidth = GetCostTextWidth(cost);
+                GUI.Label(new Rect(x, y, textWidth, lineHeight), text, _costStyle);
+                x += textWidth + itemGap;
+            }
+        }
+
+        private static string GetCostText(GameAPI.BuildingCostInfo cost)
+        {
+            if (cost.Available >= cost.Needed)
+            {
+                return $"{cost.Available}/{cost.Needed}";
+            }
+
+            return $"<color=#FF2A00>{cost.Available}</color>/{cost.Needed}";
+        }
+
+        private static float GetCostTextWidth(GameAPI.BuildingCostInfo cost)
+        {
+            return _costStyle.CalcSize(new GUIContent($"{cost.Available}/{cost.Needed}")).x + 2f;
         }
 
         private static void DrawSprite(Sprite sprite, Rect rect)
@@ -154,16 +262,17 @@ namespace StockAlert.UI.HUD
 
         private static void EnsureStyles()
         {
-            if (_panelStyle != null)
+            if (_panelStyle != null && _panelTexture != null)
             {
                 return;
             }
 
+            _panelTexture = MakeTexture(new Color32(12, 10, 8, 238), new Color32(178, 143, 72, 255));
             _panelStyle = new GUIStyle(GUI.skin.box)
             {
                 normal =
                 {
-                    background = MakeTexture(new Color32(12, 10, 8, 238), new Color32(178, 143, 72, 255))
+                    background = _panelTexture
                 }
             };
 
@@ -177,7 +286,14 @@ namespace StockAlert.UI.HUD
             _itemStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = 13,
+                alignment = TextAnchor.MiddleLeft,
                 normal = { textColor = new Color32(244, 238, 219, 255) }
+            };
+
+            _costStyle = new GUIStyle(_itemStyle)
+            {
+                fontSize = 12,
+                richText = true
             };
 
             _emptyStyle = new GUIStyle(_itemStyle)
@@ -192,7 +308,8 @@ namespace StockAlert.UI.HUD
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
             {
                 filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp
+                wrapMode = TextureWrapMode.Clamp,
+                hideFlags = HideFlags.HideAndDontSave
             };
 
             for (var y = 0; y < size; y++)
@@ -205,20 +322,24 @@ namespace StockAlert.UI.HUD
             }
 
             texture.Apply(false, true);
+            DontDestroyOnLoad(texture);
             return texture;
         }
 
         private readonly struct BuildingRow
         {
-            public BuildingRow(string name, Sprite icon)
+            public BuildingRow(string name, Sprite icon, List<GameAPI.BuildingCostInfo> costs)
             {
                 Name = name;
                 Icon = icon;
+                Costs = costs ?? new List<GameAPI.BuildingCostInfo>();
             }
 
             public string Name { get; }
 
             public Sprite Icon { get; }
+
+            public List<GameAPI.BuildingCostInfo> Costs { get; }
         }
     }
 }

@@ -228,7 +228,7 @@ namespace StockAlert.Infrastructure.Hooks
             return true;
         }
 
-        private static CostResult ResolveCost(string goodName, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth, bool requireAvailableRaw)
+        private static CostResult ResolveCost(string goodName, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth, bool requireAvailableRaw, float requiredAmount = 1f)
         {
             if (string.IsNullOrWhiteSpace(goodName))
             {
@@ -248,7 +248,7 @@ namespace StockAlert.Infrastructure.Hooks
             CostResult best = null;
             foreach (var availableRecipe in recipes)
             {
-                var recipeCost = ResolveRecipeCost(availableRecipe, chain, availableRecipes, depth + 1, requireAvailableRaw);
+                var recipeCost = ResolveRecipeCost(availableRecipe, chain, availableRecipes, depth + 1, requireAvailableRaw, requiredAmount);
                 if (recipeCost == null)
                 {
                     continue;
@@ -270,7 +270,7 @@ namespace StockAlert.Infrastructure.Hooks
             return best ?? CostResult.Raw(goodName, GetTraderSellValueInAmber(goodName, 1));
         }
 
-        private static CostResult ResolveRecipeCost(GameAPI.AvailableWorkshopRecipe availableRecipe, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth, bool requireAvailableRaw)
+        private static CostResult ResolveRecipeCost(GameAPI.AvailableWorkshopRecipe availableRecipe, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth, bool requireAvailableRaw, float requiredAmount)
         {
             var recipe = availableRecipe?.Recipe;
             var outputAmount = GameAPI.GetEffectiveWorkshopRecipeOutput(availableRecipe);
@@ -279,11 +279,15 @@ namespace StockAlert.Infrastructure.Hooks
                 return null;
             }
 
+            // Select upstream ingredients for every batch the parent recipe needs, not just one.
+            var requiredBatches = requireAvailableRaw
+                ? Math.Max(1, Mathf.CeilToInt(requiredAmount / outputAmount))
+                : 1;
             var totalCost = 0f;
             var ingredients = new List<CostIngredient>();
             foreach (var set in recipe.requiredGoods ?? Array.Empty<GoodsSet>())
             {
-                var selected = ResolveCheapestIngredient(set, chain, availableRecipes, depth, requireAvailableRaw);
+                var selected = ResolveCheapestIngredient(set, chain, availableRecipes, depth, requireAvailableRaw, requiredBatches);
                 if (selected == null)
                 {
                     if (set?.goods != null && set.goods.Length > 0)
@@ -304,7 +308,7 @@ namespace StockAlert.Infrastructure.Hooks
             }
 
             var rawRequirements = GetRawRequirementsForRecipeBatch(ingredients);
-            if (requireAvailableRaw && !HasEnoughRawInputs(rawRequirements))
+            if (requireAvailableRaw && !HasEnoughRawInputs(rawRequirements, requiredBatches))
             {
                 return null;
             }
@@ -312,7 +316,7 @@ namespace StockAlert.Infrastructure.Hooks
             return CostResult.FromRecipe(recipe, totalCost / outputAmount, totalCost, outputAmount, ingredients, rawRequirements);
         }
 
-        private static CostIngredient ResolveCheapestIngredient(GoodsSet set, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth, bool requireAvailableRaw)
+        private static CostIngredient ResolveCheapestIngredient(GoodsSet set, HashSet<string> chain, List<GameAPI.AvailableWorkshopRecipe> availableRecipes, int depth, bool requireAvailableRaw, int requiredBatches)
         {
             CostIngredient best = null;
             foreach (var good in set?.goods ?? Array.Empty<GoodRef>())
@@ -322,7 +326,8 @@ namespace StockAlert.Infrastructure.Hooks
                     continue;
                 }
 
-                var cost = ResolveCost(good.Name, chain, availableRecipes, depth, requireAvailableRaw);
+                var requiredAmount = (float)good.amount * requiredBatches;
+                var cost = ResolveCost(good.Name, chain, availableRecipes, depth, requireAvailableRaw, requiredAmount);
                 if (cost == null)
                 {
                     continue;
@@ -333,7 +338,7 @@ namespace StockAlert.Infrastructure.Hooks
                     return new CostIngredient(good.Name, good.amount, cost, 0f);
                 }
 
-                if (requireAvailableRaw && !HasEnoughRawInputs(GetRawRequirementsForIngredient(good.amount, cost)))
+                if (requireAvailableRaw && !HasEnoughRawInputs(GetRawRequirementsForIngredient(requiredAmount, cost)))
                 {
                     continue;
                 }
@@ -359,7 +364,7 @@ namespace StockAlert.Infrastructure.Hooks
             return result;
         }
 
-        private static Dictionary<string, float> GetRawRequirementsForIngredient(int amount, CostResult cost)
+        private static Dictionary<string, float> GetRawRequirementsForIngredient(float amount, CostResult cost)
         {
             var result = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
             if (cost == null || amount <= 0)
@@ -398,11 +403,11 @@ namespace StockAlert.Infrastructure.Hooks
             }
         }
 
-        private static bool HasEnoughRawInputs(Dictionary<string, float> requirements)
+        private static bool HasEnoughRawInputs(Dictionary<string, float> requirements, int batches = 1)
         {
             foreach (var requirement in requirements ?? new Dictionary<string, float>())
             {
-                if (GameAPI.GetStoredAmount(null, requirement.Key) + 0.001f < requirement.Value)
+                if (GameAPI.GetStoredAmount(null, requirement.Key) + 0.001f < requirement.Value * batches)
                 {
                     return false;
                 }

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.7] - 2026-09-14
+
+### Added
+- Worker slots show the game's green right-pointing arrow when carrying goods to a warehouse. Enabled by default; disable with `ShowWarehouseDeliveryStatusIcon = false` under `[HUD]` in `BepInEx/config/StockAlert.cfg`.
+- Added an F8 HUD sorting option: newest shortage first (default) or biggest deficit, measured as wanted stock minus current stock.
+- Added a default-on F8 option that shows the settlement tile grid while placing or moving a building.
+
+### Changed
+- The zero-building hover now shows each building's live construction costs using material icons and `available/needed` amounts.
+- Hearths with no firekeeper now show a red free-worker icon when their remaining fire falls below the fuel-delivery threshold.
+
+### Fixed
+- Trade route profit's available-input check now considers all required upstream batches when choosing ingredients, preventing usable recipe chains such as Better Packaging from being discarded too early.
+- The zero-building hover now retains its background after scene changes, includes available biome-essential buildings such as the Archaeologist's Office, and no longer mistakes the Teahouse for an excluded housing building.
+
 ## [1.2.6] - 2026-08-02
 
 ### Added

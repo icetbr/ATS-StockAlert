@@ -71,6 +71,9 @@
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(StormPath)\Against the Storm_Data\Managed\Unity.TextMeshPro.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.TextCoreFontEngineModule">
+      <HintPath>$(StormPath)\Against the Storm_Data\Managed\UnityEngine.TextCoreFontEngineModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <!-- Auto‑deploy to BepInEx -->

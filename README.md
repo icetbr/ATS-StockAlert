@@ -6,6 +6,8 @@
 
 Displays goods that have a production limit set in the Recipes menu, and shows their current/max stock in a compact, movable, hideable HUD anchored to the bottom-right or bottom-left corner.
 
+Use **HUD sort** in the `F8` settings window to choose **Newest first** (default) or **Biggest deficit**. Biggest deficit sorts by wanted stock minus current stock, not percentage; ties show the newest shortage first. The choice applies immediately and is saved between sessions.
+
 Stock below production limit that cannot be produced further (after current in-progress productions), are now marked in red.
 
 It can also optionally auto-adjust production limits for all goods you currently have a recipe for, based on the number of people consuming them and an adjustable multiplier.
@@ -36,6 +38,8 @@ Holding Shift while the vanilla Alt worker overlay is open filters the overlay t
 
 Clicking Hearth decoration upgrade requirements selects a matching decoration for construction: Park for Comfort, Garden for Aesthetics, and Marble Fountain for Harmony.
 
+A settlement tile grid is shown while placing or moving a building.
+
 When the Grazer/Forest Eater event is active, it can show the Grazer's currently chosen path with an arrow marking the next direction.
 
 Hovering the bottom blightrot icon shows unlocked buildings that you currently have zero of, with building icons, excluding decorations, houses, warehouses, hearths, hydrants, roads, gathering posts, geysers, farm fields, mines, and similar source-only buildings.
@@ -52,9 +56,13 @@ It can also optionally highlight recipe buildings in the world when they have an
 
 Building shortage indicators also show the matching shortage product icons next to the worker icon, respect per-building local recipe limits, and also mark farms when fields in range need seasonal work. Mines are marked only for the active recipe matching the ore currently under the mine, and water-collecting buildings are marked when their current water type has free tank capacity.
 
+On Hearths with no firekeeper assigned, the free-worker icon turns red when the remaining fire falls below that Hearth's fuel-delivery threshold.
+
 When a good is marked red because it cannot continue production after current in-progress productions, these building indicators can also extend to gathering/source posts that can provide its missing ingredients.
 
 Warehouses with assigned haulers show a small hauler indicator with the current hauler count.
+
+Worker slots show the game's green right-pointing arrow while carrying goods to a warehouse, including glade-event rewards. Other travel keeps the normal boot icon. This is enabled by default; to disable it, set `ShowWarehouseDeliveryStatusIcon = false` under `[HUD]` in `BepInEx/config/StockAlert.cfg`.
 
 Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 - the exclamation marker for builders that are idling
@@ -63,7 +71,7 @@ Integrated Builder Icon mod made by ~DGH into my mod with some changes:
 
 Newly triggered shortages go at the top of the list.
 
-Options for HUD anchor, movable, hideable, building indicators, builder status icons, idle builders alert, timed orders alert, queued worker assignments, Grazer direction overlay, high quality shadows, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
+Options for HUD anchor, movable, hideable, building indicators, building placement grid, builder status icons, idle builders alert, timed orders alert, queued worker assignments, Grazer direction overlay, high quality shadows, ingredient wheel building stock, embarkation cost ranges, trade route profit, season ending trade routes alert, Purging Fire auto-adjust, and production limit multiplier are available in the `F8` settings window.
 
 The timed orders alert is enabled by default and can be disabled in the `F8` settings window.
 
@@ -156,7 +164,7 @@ ShowWorkerHoverHighlight = false
 ## Blightrot zero-building hover
 
 - enabled by default
-- hovering the bottom blightrot icon shows unlocked buildings that you currently have zero of, with building icons
+- hovering the bottom blightrot icon shows unlocked buildings that you currently have zero of, with building icons and each building's live construction costs as material icons with `available/needed` amounts
 - excludes decorations, houses, warehouses, hearths, hydrants, roads, gathering posts, geysers, farm fields, mines, and similar source-only buildings
 - to disable it, edit `BepInEx/config/StockAlert.cfg` and set `ShowZeroBuildingBlueprintHover = false`; set it back to `true` to re-enable it:
 
@@ -184,8 +192,10 @@ ShowZeroBuildingBlueprintHover = false
 - when enabled, trade route offers show estimated percentage profit next to the travel time
 - profit is calculated as final amber reward minus the estimated production cost of the materials and packs of provisions
 - production cost uses the cheapest available recipe chain from unlocked blueprints, following the chain down to raw material inputs
+- perk-added recipes, including Better Packaging's Packs of Trade Goods recipe at the Makeshift Post, are included; Worker Mobilization applies to both original and perk-added Makeshift Post recipes
 - recipe costs use the live recipe output amounts shown in buildings, including perks and other production bonuses, falling back to trader sell value for raw or unavailable goods
 - the trade routes screen has an `Available inputs` option to only use recipe chains that can currently be crafted from available raw ingredients
+- the available-input check considers all upstream production batches needed when choosing between alternative ingredients
 - the F8 Trade Route Profit options include an off-by-default `Ignore disabled recipes` checkbox to use only enabled recipes from placed production buildings
 - the displayed percentage compares total route profit to the trader sell value of the raw inputs used by that recipe path
 - hover the profit text to see the calculation breakdown

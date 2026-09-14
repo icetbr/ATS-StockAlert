@@ -43,6 +43,8 @@ namespace StockAlert.Game
         private static PropertyInfo _piLakesService;
         private static PropertyInfo _piOreService;
         private static PropertyInfo _piGladesService;
+        private static PropertyInfo _piMapService;
+        private static PropertyInfo _piModeService;
         private static MethodInfo _miGetAmount;
         private static MethodInfo _miGetGlobalLimit;
         private static MethodInfo _miSetGlobalLimit;
@@ -67,6 +69,7 @@ namespace StockAlert.Game
         private static PropertyInfo _piFarmfields;
         private static PropertyInfo _piMines;
         private static PropertyInfo _piRainCatchers;
+        private static PropertyInfo _piHearths;
         private static PropertyInfo _piStorages;
         private static PropertyInfo _piConstructions;
         private static FieldInfo _fiCurrentNews;
@@ -99,6 +102,22 @@ namespace StockAlert.Game
             public BuildingModel Model { get; }
 
             public int Count { get; }
+        }
+
+        public sealed class BuildingCostInfo
+        {
+            public BuildingCostInfo(Sprite icon, int available, int needed)
+            {
+                Icon = icon;
+                Available = available;
+                Needed = needed;
+            }
+
+            public Sprite Icon { get; }
+
+            public int Available { get; }
+
+            public int Needed { get; }
         }
 
         public sealed class TimedOrderInfo
@@ -287,6 +306,43 @@ namespace StockAlert.Game
 
                 var value = _piIsGameActive.GetValue(null, null);
                 return value is bool isActive && isActive;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public static bool IsBuildingPlacementActive()
+        {
+            try
+            {
+                var modeService = GetModeService();
+                return modeService != null &&
+                       (modeService.BuildingConstructionMode.Value || modeService.BuildingMovingMode.Value);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public static bool TryGetMapSize(out int width, out int height)
+        {
+            width = 0;
+            height = 0;
+
+            try
+            {
+                var fields = GetMapService()?.Fields;
+                if (fields == null)
+                {
+                    return false;
+                }
+
+                width = fields.width;
+                height = fields.height;
+                return width > 0 && height > 0;
             }
             catch (Exception)
             {
@@ -838,12 +894,13 @@ namespace StockAlert.Game
 
                 var existingCounts = GetPlacedBuildingCountsByModel();
                 var seenModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var model in EnumerateBuildingModels(settings))
+                foreach (var model in EnumerateBuildingModels(settings).Concat(EnumerateAvailableBuildingModels()))
                 {
                     if (model == null ||
                         string.IsNullOrWhiteSpace(model.Name) ||
                         !seenModels.Add(model.Name) ||
                         !model.HasAccessTo() ||
+                        !model.MeetsRequirements() ||
                         !IsBuildingUnlocked(model) ||
                         ShouldExcludeFromZeroBuildingOverview(model))
                     {
@@ -858,6 +915,46 @@ namespace StockAlert.Game
                 }
 
                 result.Sort((left, right) => string.Compare(GetBuildingDisplayName(left.Model), GetBuildingDisplayName(right.Model), StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception)
+            {
+            }
+
+            return result;
+        }
+
+        public static List<BuildingCostInfo> GetBuildingConstructionCosts(BuildingModel model)
+        {
+            var result = new List<BuildingCostInfo>();
+            if (model == null)
+            {
+                return result;
+            }
+
+            try
+            {
+                var constructionService = GetConstructionService();
+                var settings = GetSettings();
+                var costs = constructionService?.GetConstructionCostFor(model);
+                if (settings == null || costs == null)
+                {
+                    return result;
+                }
+
+                foreach (var cost in costs)
+                {
+                    if (string.IsNullOrWhiteSpace(cost.name) || cost.amount <= 0)
+                    {
+                        continue;
+                    }
+
+                    var good = settings.GetGood(cost.name);
+                    result.Add(new BuildingCostInfo(
+                        good?.icon,
+                        GetStoredAmount(good, cost.name),
+                        cost.amount
+                    ));
+                }
             }
             catch (Exception)
             {
@@ -1122,6 +1219,17 @@ namespace StockAlert.Game
             }
         }
 
+        private static IEnumerable<BuildingModel> EnumerateAvailableBuildingModels()
+        {
+            if (GetGameContentService() is GameContentService gameContentService &&
+                gameContentService.Buildings?.Value != null)
+            {
+                return gameContentService.Buildings.Value;
+            }
+
+            return Enumerable.Empty<BuildingModel>();
+        }
+
         private static Dictionary<string, int> GetPlacedBuildingCountsByModel()
         {
             var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -1191,7 +1299,6 @@ namespace StockAlert.Game
                    name.IndexOf("Farm Field", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Mine", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Small Warehouse", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   name.IndexOf("House", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Road", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Hydrant", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    name.IndexOf("Hearth", StringComparison.OrdinalIgnoreCase) >= 0;
@@ -1319,6 +1426,27 @@ namespace StockAlert.Game
             }
 
             return result.OfType<RainCatcher>().ToList();
+        }
+
+        public static List<Hearth> GetHearthBuildings()
+        {
+            var result = new List<ProductionBuilding>();
+
+            try
+            {
+                var buildingsService = GetBuildingsService();
+                if (buildingsService == null)
+                {
+                    return new List<Hearth>();
+                }
+
+                AddProductionBuildingsFromDictionary(buildingsService, "Hearths", ref _piHearths, result);
+            }
+            catch (Exception)
+            {
+            }
+
+            return result.OfType<Hearth>().ToList();
         }
 
         public static bool CanRainCatcherFillWaterTank(RainCatcher rainCatcher)
@@ -1764,6 +1892,26 @@ namespace StockAlert.Game
             }
 
             return _piGladesService?.GetValue(null, null);
+        }
+
+        private static IMapService GetMapService()
+        {
+            if (_piMapService == null)
+            {
+                _piMapService = typeof(GameMB).GetProperty("MapService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piMapService?.GetValue(null, null) as IMapService;
+        }
+
+        private static IModeService GetModeService()
+        {
+            if (_piModeService == null)
+            {
+                _piModeService = typeof(GameMB).GetProperty("ModeService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            return _piModeService?.GetValue(null, null) as IModeService;
         }
 
         private static void AddRecipeGoodsFromDictionary(object buildingsService, string propertyName, ref PropertyInfo propertyInfo, HashSet<string> goods)

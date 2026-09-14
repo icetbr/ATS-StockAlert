@@ -67,6 +67,7 @@ namespace StockAlert.Infrastructure.Bootstrap
                 WorkerAssignmentQueue.ClearAll();
                 ItemLocatorOverlay.Clear();
                 ForestEaterDirectionOverlay.Clear();
+                BuildingPlacementGrid.Clear();
                 ClearSeasonEndingTradeRoutesAlert();
                 _missionObjectiveAlertShown = false;
                 return;
@@ -81,6 +82,7 @@ namespace StockAlert.Infrastructure.Bootstrap
             _wasGameActive = true;
 
             HighQualityShadowTweak.Refresh();
+            BuildingPlacementGrid.Refresh();
             UpdateSeasonEndingTradeRoutesAlert();
 
             if (Time.unscaledTime >= _nextRefreshTime)
