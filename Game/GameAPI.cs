@@ -30,7 +30,6 @@ namespace StockAlert.Game
         private static PropertyInfo _piVillagersService;
         private static PropertyInfo _piBuildingsService;
         private static PropertyInfo _piBlightService;
-        private static PropertyInfo _piRainpunkService;
         private static PropertyInfo _piLocalStorages;
         private static PropertyInfo _piIngredientsStorages;
         private static PropertyInfo _piIsGameActive;
@@ -1864,15 +1863,15 @@ namespace StockAlert.Game
             return _piBlightService?.GetValue(null, null);
         }
 
-        private static object GetRainpunkService()
-        {
-            if (_piRainpunkService == null)
-            {
-                _piRainpunkService = typeof(GameMB).GetProperty("RainpunkService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-            }
+        // private static object GetRainpunkService()
+        // {
+        //     if (_piRainpunkService == null)
+        //     {
+        //         _piRainpunkService = typeof(GameMB).GetProperty("RainpunkService", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+        //     }
 
-            return _piRainpunkService?.GetValue(null, null);
-        }
+        //     return _piRainpunkService?.GetValue(null, null);
+        // }
 
         private static object GetCalendarService()
         {
